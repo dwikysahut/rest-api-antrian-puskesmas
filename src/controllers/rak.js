@@ -20,7 +20,7 @@ module.exports = {
       }
       return helper.response(response, 200, { message: 'Get data Rak berhasil' }, result);
     } catch (error) {
-      return helper.response(response, 500, { message: 'Put data Rak gagal' });
+      return helper.response(response, 500, { message: 'Get data Rak gagal' });
     }
   },
 

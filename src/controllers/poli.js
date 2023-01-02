@@ -1,0 +1,63 @@
+const helper = require('../helpers');
+const poliModel = require('../models/poli');
+
+module.exports = {
+  getAllPoli: async (request, response) => {
+    try {
+      const result = await poliModel.getAllPoli();
+      helper.response(response, 200, { message: 'Get All Poli Berhasil' }, result);
+    } catch (error) {
+      console.log(error);
+      helper.response(response, 500, { message: 'Get All Poli Gagal' });
+    }
+  },
+  getPoliById: async (request, response) => {
+    try {
+      const { id } = request.params;
+      const result = await poliModel.getPoliById(id);
+      if (!result) {
+        return helper.response(response, 404, { message: 'Data Poli tidak Ditemukan' });
+      }
+      return helper.response(response, 200, { message: 'Get data Poli berhasil' }, result);
+    } catch (error) {
+      return helper.response(response, 500, { message: 'Get data Poli gagal' });
+    }
+  },
+
+  postPoli: async (request, response) => {
+    try {
+      const setData = request.body;
+      console.log(setData);
+
+      const result = await poliModel.postPoli(setData);
+      return helper.response(response, 201, { message: 'Post data Poli berhasil' }, result);
+    } catch (error) {
+      console.log(error);
+      return helper.response(response, 500, { message: 'Post data Poli gagal' });
+    }
+  },
+  putPoli: async (request, response) => {
+    try {
+      const setData = request.body;
+      const { id } = request.params;
+      const checkData = await poliModel.getPoliById(id);
+      if (!checkData) {
+        return helper.response(response, 404, { message: 'Data Poli tidak Ditemukan' });
+      }
+      const result = await poliModel.putPoli(id, setData);
+      return helper.response(response, 200, { message: 'Put data Poli berhasil' }, result);
+    } catch (error) {
+      return helper.response(response, 500, { message: 'Put data Poli gagal' });
+    }
+  },
+  deletePoli: async (request, response) => {
+    try {
+      const { id } = request.params;
+      const result = await poliModel.deletePoli(id);
+      return helper.response(response, 200, { message: 'Delete data Poli berhasil' }, result);
+    } catch (error) {
+      console.log(error);
+      return helper.response(response, 500, { message: `Delete data Poli gagal, ${error.message}` });
+    }
+  },
+};

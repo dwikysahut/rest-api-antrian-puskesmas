@@ -1,14 +1,50 @@
+/* eslint-disable camelcase */
 /* eslint-disable max-len */
+const req = require('request');
+const axios = require('axios');
 const informasiModel = require('../models/informasi');
 const helper = require('../helpers');
+require('dotenv').config();
 
+let access_token = '';
 module.exports = {
   getAllInformasi: async (request, response) => {
     try {
-      const result = await informasiModel.getAllInformasi();
-      return helper.response(response, 200, { message: 'Get All data Informasi berhasil' }, result);
+      const resultFirst = await informasiModel.getAllInformasi();
+      const resultSecond = await informasiModel.getFromInstagram(access_token);
+      const newResultSecond = resultSecond.map((item) => ({
+        id_informasi: item.id, judul_informasi: null, isi_informasi: item.caption, gambar: item.media_url, created_at: item.timestamp,
+      }));
+      const combineResult = [
+        ...resultFirst,
+        ...newResultSecond,
+      ];
+      return helper.response(response, 200, { message: 'Get All data Informasi berhasil' }, combineResult);
     } catch (error) {
+      console.log(error);
       return helper.response(response, 500, { message: 'Get All data Informasi gagal' });
+    }
+  },
+  getAllInformasiFromDB: async (request, response) => {
+    try {
+      const result = await informasiModel.getAllInformasi();
+
+      return helper.response(response, 200, { message: 'Get data Informasi dari database berhasil' }, result);
+    } catch (error) {
+      console.log(error);
+      return helper.response(response, 500, { message: 'Get data Informasi dari database berhasil' });
+    }
+  },
+  getAllInformasiFromInstagram: async (request, response) => {
+    try {
+      const result = await informasiModel.getFromInstagram(access_token);
+      const resultFormatted = result.map((item) => ({
+        id_informasi: item.id, judul_informasi: null, isi_informasi: item.caption, gambar: item.media_url, created_at: item.timestamp,
+      }));
+      return helper.response(response, 200, { message: 'Get All data Informasi dari instagram berhasil' }, resultFormatted);
+    } catch (error) {
+      console.log(error);
+      return helper.response(response, 500, { message: 'Get All data Informasi dari instagram gagal' });
     }
   },
   getInformasiById: async (request, response) => {
@@ -20,7 +56,7 @@ module.exports = {
       }
       return helper.response(response, 200, { message: 'Get data Informasi berhasil' }, result);
     } catch (error) {
-      return helper.response(response, 500, { message: 'Put data Informasi gagal' });
+      return helper.response(response, 500, { message: 'Get data Informasi gagal' });
     }
   },
 
@@ -91,6 +127,37 @@ module.exports = {
       return helper.response(response, 200, { message: 'Delete data Informasi berhasil' }, result);
     } catch (error) {
       return helper.response(response, 500, { message: 'Delete data Informasi gagal' });
+    }
+  },
+  generateToken: async (request, response) => {
+    try {
+      const { code } = request.query;
+      const redirect_uri = 'https://localhost:5000/informasi/instagram/generate-token';
+
+      const resultToken = await axios.post(
+        'https://api.instagram.com/oauth/access_token',
+        {
+          client_id: process.env.INSTA_CLIENT_ID,
+          client_secret: process.env.INSTA_APP_SECRET,
+          grant_type: 'authorization_code',
+          redirect_uri,
+          code,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Accept: 'application/json',
+          },
+        },
+      );
+
+      // access_token = JSON.parse(resultToken);
+      const resp = await axios.get(`https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${process.env.INSTA_APP_SECRET}&access_token=${resultToken.data.access_token}`);
+
+      access_token = resp.data.access_token;
+      helper.response(response, 200, { message: 'Generate token berhasil' }, resp.data);
+    } catch (error) {
+      console.log(error);
     }
   },
 };

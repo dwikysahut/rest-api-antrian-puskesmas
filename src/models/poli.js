@@ -1,11 +1,11 @@
+/* eslint-disable radix */
 /* eslint-disable camelcase */
-const jwt = require('jsonwebtoken');
 const connection = require('../config/connection');
 
 module.exports = {
 
-  getRakById: (id) => new Promise((resolve, reject) => {
-    connection.query('SELECT * FROM rak WHERE id_rak=?', id, (error, result) => {
+  getPoliById: (id) => new Promise((resolve, reject) => {
+    connection.query('SELECT * FROM poli WHERE id_poli=?', id, (error, result) => {
       if (!error) {
         console.log(result);
         resolve(result[0]);
@@ -14,8 +14,8 @@ module.exports = {
       }
     });
   }),
-  postRak: (setData) => new Promise((resolve, reject) => {
-    connection.query('INSERT INTO rak set ?', setData, (error, result) => {
+  postPoli: (setData) => new Promise((resolve, reject) => {
+    connection.query('INSERT INTO poli set ?', setData, (error, result) => {
       if (!error) {
         const newResult = {
           id: result.insertId,
@@ -28,8 +28,8 @@ module.exports = {
       }
     });
   }),
-  getAllRak: () => new Promise((resolve, reject) => {
-    connection.query('SELECT * FROM rak', (error, result) => {
+  getAllPoli: () => new Promise((resolve, reject) => {
+    connection.query('SELECT * FROM poli', (error, result) => {
       if (!error) {
         resolve(result);
       } else {
@@ -37,11 +37,12 @@ module.exports = {
       }
     });
   }),
-  putRak: (id_rak, setData) => new Promise((resolve, reject) => {
-    connection.query('UPDATE rak set ? WHERE id_rak=?', [setData, id_rak], (error, result) => {
+
+  putPoli: (id_poli, setData) => new Promise((resolve, reject) => {
+    connection.query('UPDATE poli set ? WHERE id_poli=?', [setData, id_poli], (error, result) => {
       if (!error) {
         const newData = {
-          id: parseInt(id_rak),
+          id: parseInt(id_poli),
           ...setData,
         };
         resolve(newData);
@@ -50,11 +51,11 @@ module.exports = {
       }
     });
   }),
-  deleteRak: (id_rak) => new Promise((resolve, reject) => {
-    connection.query('DELETE from rak WHERE id_rak=?', id_rak, (error, result) => {
+  deletePoli: (id_poli) => new Promise((resolve, reject) => {
+    connection.query('DELETE from poli WHERE id_poli=?', id_poli, (error, result) => {
       if (!error) {
         const newData = {
-          id: parseInt(id_rak),
+          id: parseInt(id_poli),
           ...result,
         };
         resolve(newData);

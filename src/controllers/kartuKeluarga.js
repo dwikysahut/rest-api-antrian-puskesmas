@@ -19,7 +19,7 @@ module.exports = {
       }
       return helper.response(response, 200, { message: 'Get data Kartu Keluarga berhasil' }, result);
     } catch (error) {
-      return helper.response(response, 500, { message: 'Put data Kartu Keluarga gagal' });
+      return helper.response(response, 500, { message: 'Get data Kartu Keluarga gagal' });
     }
   },
 

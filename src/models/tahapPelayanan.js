@@ -1,3 +1,4 @@
+/* eslint-disable radix */
 /* eslint-disable camelcase */
 const jwt = require('jsonwebtoken');
 const connection = require('../config/connection');
@@ -41,7 +42,7 @@ module.exports = {
     connection.query('UPDATE tahap_pelayanan set ? WHERE id_tahap_pelayanan=?', [setData, id_tahap_pelayanan], (error, result) => {
       if (!error) {
         const newData = {
-          id: id_tahap_pelayanan,
+          id: parseInt(id_tahap_pelayanan),
           ...setData,
         };
         resolve(newData);
@@ -54,7 +55,7 @@ module.exports = {
     connection.query('DELETE from tahap_pelayanan WHERE id_tahap_pelayanan=?', id_tahap_pelayanan, (error, result) => {
       if (!error) {
         const newData = {
-          id: id_tahap_pelayanan,
+          id: parseInt(id_tahap_pelayanan),
           ...result,
         };
         resolve(newData);

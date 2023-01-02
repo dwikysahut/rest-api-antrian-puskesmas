@@ -1,24 +1,23 @@
+/* eslint-disable radix */
 /* eslint-disable camelcase */
-const jwt = require('jsonwebtoken');
 const connection = require('../config/connection');
 
 module.exports = {
 
-  getRakById: (id) => new Promise((resolve, reject) => {
-    connection.query('SELECT * FROM rak WHERE id_rak=?', id, (error, result) => {
+  getUserById: (id) => new Promise((resolve, reject) => {
+    connection.query('SELECT * FROM users WHERE user_id=?', id, (error, result) => {
       if (!error) {
-        console.log(result);
         resolve(result[0]);
       } else {
         reject(new Error(error));
       }
     });
   }),
-  postRak: (setData) => new Promise((resolve, reject) => {
-    connection.query('INSERT INTO rak set ?', setData, (error, result) => {
+  postUser: (setData) => new Promise((resolve, reject) => {
+    connection.query('INSERT INTO users set ?', setData, (error, result) => {
       if (!error) {
         const newResult = {
-          id: result.insertId,
+          id: parseInt(setData.user_id),
           ...setData,
         };
         delete newResult.password;
@@ -28,8 +27,8 @@ module.exports = {
       }
     });
   }),
-  getAllRak: () => new Promise((resolve, reject) => {
-    connection.query('SELECT * FROM rak', (error, result) => {
+  getAllUsers: () => new Promise((resolve, reject) => {
+    connection.query('SELECT * FROM users', (error, result) => {
       if (!error) {
         resolve(result);
       } else {
@@ -37,24 +36,26 @@ module.exports = {
       }
     });
   }),
-  putRak: (id_rak, setData) => new Promise((resolve, reject) => {
-    connection.query('UPDATE rak set ? WHERE id_rak=?', [setData, id_rak], (error, result) => {
+
+  putUser: (id_user, setData) => new Promise((resolve, reject) => {
+    connection.query('UPDATE users set ? WHERE user_id=?', [setData, id_user], (error, result) => {
       if (!error) {
         const newData = {
-          id: parseInt(id_rak),
+          id: parseInt(id_user),
           ...setData,
         };
+        delete newData.password;
         resolve(newData);
       } else {
         reject(new Error(error));
       }
     });
   }),
-  deleteRak: (id_rak) => new Promise((resolve, reject) => {
-    connection.query('DELETE from rak WHERE id_rak=?', id_rak, (error, result) => {
+  deleteUser: (id_user) => new Promise((resolve, reject) => {
+    connection.query('DELETE from users WHERE user_id=?', id_user, (error, result) => {
       if (!error) {
         const newData = {
-          id: parseInt(id_rak),
+          id: parseInt(id_user),
           ...result,
         };
         resolve(newData);

@@ -1,3 +1,4 @@
+/* eslint-disable radix */
 /* eslint-disable camelcase */
 const jwt = require('jsonwebtoken');
 const connection = require('../config/connection');
@@ -18,7 +19,7 @@ module.exports = {
     connection.query('INSERT INTO dokter set ?', setData, (error, result) => {
       if (!error) {
         const newResult = {
-          id: result.insertId,
+          id: parseInt(setData.id_dokter),
           ...setData,
         };
         delete newResult.password;
@@ -41,7 +42,7 @@ module.exports = {
     connection.query('UPDATE dokter set ? WHERE id_dokter=?', [setData, id_dokter], (error, result) => {
       if (!error) {
         const newData = {
-          id: id_dokter,
+          id: parseInt(id_dokter),
           ...setData,
         };
         resolve(newData);
@@ -54,7 +55,7 @@ module.exports = {
     connection.query('DELETE from dokter WHERE id_dokter=?', id_dokter, (error, result) => {
       if (!error) {
         const newData = {
-          id: id_dokter,
+          id: parseInt(id_dokter),
           ...result,
         };
         resolve(newData);

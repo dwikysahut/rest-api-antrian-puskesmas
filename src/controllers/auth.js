@@ -79,6 +79,7 @@ module.exports = {
       if (!userByNIK) { return helper.response(response, 401, { message: 'Username salah' }); }
 
       if (parseInt(userByNIK.verif_email) === 0) return helper.response(response, 401, { message: 'Email belum diverifikasi, silahkan melakukan verifikasi email' });
+      if (parseInt(userByNIK.verif_akun) === 0) return helper.response(response, 401, { message: 'Akun belum diverifikasi, silahkan menunggu verifikasi akun' });
 
       const comparePass = bcrypt.compareSync(password, userByNIK.password);
       if (!comparePass) return helper.response(response, 401, { message: 'Password salah' });

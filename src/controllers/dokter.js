@@ -19,7 +19,7 @@ module.exports = {
       }
       return helper.response(response, 200, { message: 'Get data Dokter berhasil' }, result);
     } catch (error) {
-      return helper.response(response, 500, { message: 'Put data Dokter gagal' });
+      return helper.response(response, 500, { message: 'Get data Dokter gagal' });
     }
   },
 
