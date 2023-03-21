@@ -22,7 +22,6 @@ module.exports = {
           id: parseInt(setData.id_dokter),
           ...setData,
         };
-        delete newResult.password;
         resolve(newResult);
       } else {
         reject(new Error(error));
@@ -43,7 +42,9 @@ module.exports = {
       if (!error) {
         const newData = {
           id: parseInt(id_dokter),
-          ...setData,
+          ...result,
+          field: { id: parseInt(id_dokter), ...setData },
+
         };
         resolve(newData);
       } else {
@@ -59,6 +60,15 @@ module.exports = {
           ...result,
         };
         resolve(newData);
+      } else {
+        reject(new Error(error));
+      }
+    });
+  }),
+  getDokterCount: (id) => new Promise((resolve, reject) => {
+    connection.query('select COUNT(*) as jumlah_dokter from dokter', id, (error, result) => {
+      if (!error) {
+        resolve(result[0]);
       } else {
         reject(new Error(error));
       }

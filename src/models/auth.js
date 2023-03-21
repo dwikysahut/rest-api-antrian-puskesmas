@@ -21,6 +21,7 @@ module.exports = {
       }
     });
   }),
+
   getUserBynoKK: (noKK) => new Promise((resolve, reject) => {
     connection.query('SELECT * FROM kartu_keluarga WHERE no_kk=?', noKK, (error, result) => {
       if (!error) {
@@ -49,6 +50,7 @@ module.exports = {
       if ((error && error.name === 'TokenExpiredError') || (error && error.name === 'JsonWebTokenError')) {
         reject(new Error(error));
       } else {
+        console.log(result);
         resolve(result.result);
       }
     });

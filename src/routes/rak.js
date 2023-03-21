@@ -2,13 +2,13 @@ const express = require('express');
 
 const Route = express.Router();
 const rakController = require('../controllers/rak');
-const { authRefreshToken } = require('../middleware/auth');
+const { authentication, authorization } = require('../middleware/auth');
 
 Route
-  .get('/', rakController.getAllRak)
-  .get('/:id', rakController.getRakById)
-  .post('/', rakController.postRak)
-  .put('/:id', rakController.putRak)
-  .delete('/:id', rakController.deleteRak);
+  .get('/', authentication, rakController.getAllRak)
+  .get('/:id', authentication, rakController.getRakById)
+  .post('/', authentication, authorization, rakController.postRak)
+  .put('/:id', authentication, authorization, rakController.putRak)
+  .delete('/:id', authentication, authorization, rakController.deleteRak);
 
 module.exports = Route;

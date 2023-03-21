@@ -1,3 +1,4 @@
+/* eslint-disable radix */
 /* eslint-disable camelcase */
 const jwt = require('jsonwebtoken');
 const connection = require('../config/connection');
@@ -6,6 +7,16 @@ module.exports = {
 
   getRakById: (id) => new Promise((resolve, reject) => {
     connection.query('SELECT * FROM rak WHERE id_rak=?', id, (error, result) => {
+      if (!error) {
+        console.log(result);
+        resolve(result[0]);
+      } else {
+        reject(new Error(error));
+      }
+    });
+  }),
+  getRakByKodeRak: (id) => new Promise((resolve, reject) => {
+    connection.query('SELECT * FROM rak WHERE kode_rak=?', id, (error, result) => {
       if (!error) {
         console.log(result);
         resolve(result[0]);
@@ -42,7 +53,9 @@ module.exports = {
       if (!error) {
         const newData = {
           id: parseInt(id_rak),
-          ...setData,
+          ...result,
+          field: { id: parseInt(id_rak), ...setData },
+
         };
         resolve(newData);
       } else {

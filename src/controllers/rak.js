@@ -29,7 +29,12 @@ module.exports = {
       const setData = request.body;
       console.log(setData);
 
+      const checkItem = await rakModel.getRakByKodeRak(setData.kode_rak);
+      if (checkItem) {
+        return helper.response(response, 409, { message: 'Data Rak Sudah Tersedia' });
+      }
       const result = await rakModel.postRak(setData);
+
       return helper.response(response, 201, { message: 'Post data Rak berhasil' }, result);
     } catch (error) {
       console.log(error);

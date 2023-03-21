@@ -1,18 +1,53 @@
+// import instaRefreshCron from './crons/instaRefresh.cron';
+
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 
+const cron = require('node-cron');
+
 const https = require('https');
-const http = require('https');
+const http = require('http');
+
 const fs = require('fs');
 const path = require('path');
+
+const socketIo = require('socket.io');
+const { instagramToken } = require('./src/utils/instaRefresh.cron');
 
 const routeNavigator = require('./src/index');
 
 const app = express();
 require('dotenv').config();
 
+const server = https
+  .createServer(
+    {
+      key: fs.readFileSync('./security/cert.key'),
+      cert: fs.readFileSync('./security/cert.pem'),
+    },
+    app,
+  );
+
+const io = socketIo(server, {
+  cors: {
+    origin: '*',
+  },
+});
+
+app.use((req, res, next) => {
+  req.io = io;
+  return next();
+});
+
+const usersConnected = [];
+io.on('connection', (socket) => {
+  socket.on('user-connected', (userId) => {
+    usersConnected[userId] = socket.id;
+    console.log(usersConnected); // ojIckSD2jqNzOqIrAGzL
+  });
+});
 // const server = app.listen(process.env.PORT, process.env.HOST_LOCAL, () => {
 //   const host = server.address().address;
 //   const { port } = server.address();
@@ -21,21 +56,17 @@ require('dotenv').config();
 // });
 
 // setting https
-https
-  .createServer(
-    {
-      key: fs.readFileSync(path.resolve('./src/utils/ssl/key.pem')),
-      cert: fs.readFileSync(path.resolve('./src/utils/ssl/cert.pem')),
-    },
-    app,
-  )
-  .listen(process.env.PORT, process.env.NODE_ENV === 'production'
-    ? process.env.HOST_DEPLOY : process.env.HOST_LOCAL, () => {
-    console.log(
-      `Example app listening on port ${process.env.PORT}! Go to https://localhost:${process.env.PORT}/`,
-    );
-  });
+server.listen(process.env.PORT, process.env.NODE_ENV === 'production'
+  ? process.env.HOST_DEPLOY : process.env.HOST_LOCAL, () => {
+  console.log(
+    `app running and listening on port ${server.address().port}! Go to https://${process.NODE_ENV === 'production' ? process.env.HOST_DEPLOY : process.env.HOST_LOCAL}:${server.address().port}/`,
+  );
+});
 
+// refresh instaAccessToken eg: weekly(every Sat)
+cron.schedule('* * * * * 7', async () => {
+  await instagramToken();
+});
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 

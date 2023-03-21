@@ -43,7 +43,9 @@ module.exports = {
       if (!error) {
         const newData = {
           id: parseInt(id_tahap_pelayanan),
-          ...setData,
+          ...result,
+          field: { id: parseInt(id_tahap_pelayanan), ...setData },
+
         };
         resolve(newData);
       } else {

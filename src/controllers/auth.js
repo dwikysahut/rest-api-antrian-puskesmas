@@ -6,6 +6,7 @@ const { nanoid } = require('nanoid');
 const generator = require('generate-password');
 const authModel = require('../models/auth');
 const kartuKeluargaModel = require('../models/kartuKeluarga');
+const usersModel = require('../models/users');
 const helper = require('../helpers');
 require('dotenv').config();
 
@@ -33,12 +34,16 @@ module.exports = {
         kepala_keluarga: setData.kepala_keluarga,
 
       };
-
       const nikChecked = await authModel.getUserByNIK(setDataUsers.user_id);
 
       if (nikChecked) {
         return helper.response(response, 409, { message: 'NIK sudah terdaftar pada akun' });
       }
+      const emailChecked = await authModel.getUserByEmail(setData.email);
+      if (emailChecked) {
+        return helper.response(response, 409, { message: 'Email sudah digunakan, gunakan email lain' });
+      }
+
       // cek nomor kk
       const isKKAvailable = await kartuKeluargaModel.getnoKKByID(setDataKK.no_kk);
       // console.log(`kk${isKKAvailable}`);
@@ -46,10 +51,7 @@ module.exports = {
       if (!isKKAvailable) {
         await kartuKeluargaModel.postKartuKeluarga(setDataKK);
       }
-      const emailChecked = await authModel.getUserByEmail(setData.email);
-      if (emailChecked) {
-        return helper.response(response, 409, { message: 'Email sudah digunakan, gunakan email lain' });
-      }
+
       const hashPassword = bcrypt.hashSync(setData.password, 6);
       const randomCode = helper.random(6);
       const hashRandomCode = bcrypt.hashSync(randomCode, 6);
@@ -65,7 +67,7 @@ module.exports = {
 
       const result = await authModel.createAccount(setDataUsers);
 
-      return helper.response(response, 201, { message: 'Akun Berhasil Dibuat' }, result);
+      return helper.response(response, 201, { message: 'Pembuatan Akun Berhasil' }, result);
     } catch (error) {
       console.log(error);
       return helper.response(response, 500, { message: 'Pendaftaran Akun Gagal' }, error);
@@ -73,28 +75,38 @@ module.exports = {
   },
   login: async (request, response) => {
     try {
-      const { user_id, password } = request.body;
+      const { user_id, password, type } = request.body;
 
       const userByNIK = await authModel.getUserByNIK(user_id);
-      if (!userByNIK) { return helper.response(response, 401, { message: 'Username salah' }); }
-
-      if (parseInt(userByNIK.verif_email) === 0) return helper.response(response, 401, { message: 'Email belum diverifikasi, silahkan melakukan verifikasi email' });
-      if (parseInt(userByNIK.verif_akun) === 0) return helper.response(response, 401, { message: 'Akun belum diverifikasi, silahkan menunggu verifikasi akun' });
+      if (!userByNIK) { return helper.response(response, 401, { message: 'User ID salah' }); }
 
       const comparePass = bcrypt.compareSync(password, userByNIK.password);
       if (!comparePass) return helper.response(response, 401, { message: 'Password salah' });
 
+      if (type === 'web' && userByNIK.role > 2) {
+        return helper.response(response, 401, { message: 'Login gagal, Tidak memiliki akses' });
+      }
+
+      // cek  verifikasi email
+      if (parseInt(userByNIK.verif_email) === 0) return helper.response(response, 401, { message: 'Email belum diverifikasi, silahkan melakukan verifikasi email' });
+      // cek verifikasi akun
+      if (parseInt(userByNIK.verif_akun) === 0) return helper.response(response, 401, { message: 'Akun belum diverifikasi oleh Admin, silahkan menunggu verifikasi akun' });
+
       delete userByNIK.password;
 
-      const token = jwt.sign({ userByNIK }, process.env.SECRET_KEY, { expiresIn: '6d' });
-      const refreshToken = jwt.sign({ userByNIK }, process.env.REFRESH_TOKEN_SECRET_KEY, { expiresIn: '14d' });
+      const token = jwt.sign({ result: userByNIK }, process.env.SECRET_KEY, { expiresIn: '6d' });
+      const refreshToken = jwt.sign({ result: userByNIK }, process.env.REFRESH_TOKEN_SECRET_KEY, { expiresIn: '14d' });
 
       const resultData = {
         ...userByNIK,
         token,
         refreshToken,
       };
+      delete resultData.created_at;
+      delete resultData.updated_at;
       refreshTokens.push(refreshToken);
+      delete resultData.verif_akun;
+      delete resultData.verif_email;
 
       return helper.response(response, 200, { message: 'Login Berhasil' }, resultData);
     } catch (error) {
@@ -138,7 +150,7 @@ module.exports = {
         return helper.response(response, 404, { message: `Akun dengan user id ${user_id} tidak ditekan` });
       }
       if (parseInt(userWithNIK.verif_email) === 1) {
-        return helper.response(response, 409, { message: 'Akun sudah diverifikasi' });
+        return helper.response(response, 409, { message: 'Email pada akun telah terverifikasi' });
       }
       const compare = bcrypt.compareSync(kode_verifikasi_email, userWithNIK.kode_verifikasi_email);
       if (!compare) {
@@ -155,9 +167,30 @@ module.exports = {
   },
   verifyUser: async (request, response) => {
     try {
-      const { user_id } = request.body;
-      const result = await authModel.verifyUserAccount(user_id);
-      return helper.response(response, 200, { message: 'verifikasi akun berhasil', result });
+      const setData = request.body;
+
+      const checkData = await authModel.getUserByNIK(setData.user_id);
+      console.log(checkData);
+      if (!checkData) {
+        return helper.response(response, 404, { message: 'User tidak ditemukan' }, {});
+      }
+      if (setData.verif_akun == 1) {
+        const result = await authModel.verifyUserAccount(setData.user_id);
+        const htmlTemplate = `<center><h2>Status Verifikasi Akun</h2><hr><h4>
+        SELAMAT.... akun anda telah <bold>DISETUJUI</bold>, silahkan login melalui aplikasi...  
+        </h4></center>`;
+        await helper.nodemailer(checkData.email, 'Status Verifikasi Akun EQ Antrian', htmlTemplate);
+
+        return helper.response(response, 200, { message: 'verifikasi akun berhasil', result });
+      }
+
+      const result = await usersModel.deleteUser(setData.user_id);
+      const htmlTemplate = `<center><h2>Status Verifikasi Akun</h2><hr><h4>
+      MOHON MAAF :(, Sayangnya, akun anda telah <bold>DITOLAK</bold>, silahkan melakukan pendaftaran kembali  
+      </h4></center>`;
+      await helper.nodemailer(checkData.email, 'Status Verifikasi Akun Anda', htmlTemplate);
+
+      return helper.response(response, 200, { message: 'Verifikasi Akun ditolak, Akun berhasil dihapus', result });
     } catch (error) {
       console.log(error);
       return helper.response(response, 500, { message: 'Verifikasi akun gagal' });
@@ -169,10 +202,11 @@ module.exports = {
 
       const isTokenAvailable = refreshTokens.includes(refreshToken);
       if (!isTokenAvailable) {
-        return helper.response(response, 403, { message: 'refresh token gagal, silahkan login kembail' });
+        return helper.response(response, 403, { message: 'refresh token gagal, silahkan login kembali' });
       }
 
       const result = await authModel.refreshToken(refreshToken);
+      console.log(isTokenAvailable);
       if (!result) {
         return helper.response(response, 401, { message: 'Akun tidak ditemukan' });
       }
@@ -188,8 +222,9 @@ module.exports = {
       refreshTokens = newRefreshTokens;
       newRefreshTokens.push(newResult.refreshToken);
 
-      return helper.response(response, 200, { message: 'refresh token berhasil' }, { newResult });
+      return helper.response(response, 200, { message: 'refresh token berhasil' }, { ...newResult });
     } catch (error) {
+      console.log(error);
       return helper.response(response, 500, { message: 'refresh token error' });
     }
   },

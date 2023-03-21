@@ -2,13 +2,13 @@ const express = require('express');
 
 const Route = express.Router();
 const tahapPelayananController = require('../controllers/tahapPelayanan');
-const { authRefreshToken } = require('../middleware/auth');
+const { authentication, authorization } = require('../middleware/auth');
 
 Route
-  .get('/', tahapPelayananController.getAllTahapPelayanan)
-  .get('/:id', tahapPelayananController.getTahapPelayananById)
-  .post('/', tahapPelayananController.postTahapPelayanan)
-  .put('/:id', tahapPelayananController.putTahapPelayanan)
-  .delete('/:id', tahapPelayananController.deleteTahapPelayanan);
+  .get('/', authentication, tahapPelayananController.getAllTahapPelayanan)
+  .get('/:id', authentication, tahapPelayananController.getTahapPelayananById)
+  .post('/', authentication, authorization, tahapPelayananController.postTahapPelayanan)
+  .put('/:id', authentication, authorization, tahapPelayananController.putTahapPelayanan)
+  .delete('/:id', authentication, authorization, tahapPelayananController.deleteTahapPelayanan);
 
 module.exports = Route;

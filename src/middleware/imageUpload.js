@@ -30,7 +30,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 800000 }, // 8mb
+  limits: { fileSize: 1000000 }, // 1mb
   fileFilter(req, file, cb) {
     checkFileType(file, cb);
   },
@@ -41,9 +41,9 @@ const uploadImage = (req, res, next) => {
   uploadProcess(req, res, (err) => {
     if (err instanceof multer.MulterError) {
       // A Multer error occurred when uploading.
-      helper.response(res, 500, { message: err.message });
+      return helper.response(res, 500, { message: err.message });
     } if (err) {
-      helper.response(res, 500, { message: err.message });
+      return helper.response(res, 500, { message: err.message });
       // An unknown error occurred when uploading.
     }
     console.log(res);
@@ -53,5 +53,5 @@ const uploadImage = (req, res, next) => {
 };
 
 module.exports = {
-  imageUpload: uploadProcess,
+  imageUpload: uploadImage,
 };

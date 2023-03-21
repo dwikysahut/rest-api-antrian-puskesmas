@@ -3,12 +3,14 @@ const express = require('express');
 const Route = express.Router();
 
 const poliController = require('../controllers/poli');
+const { authentication, authorization } = require('../middleware/auth');
 
 Route
-  .get('/', poliController.getAllPoli)
-  .get('/:id', poliController.getPoliById)
-  .post('/', poliController.postPoli)
-  .put('/:id', poliController.putPoli)
-  .delete('/:id', poliController.deletePoli);
+  .get('/', authentication, poliController.getAllPoli)
+  .get('/poli-not-in/:id', authentication, poliController.getPoliNotInPraktek)
+  .get('/:id', authentication, poliController.getPoliById)
+  .post('/', authentication, authorization, poliController.postPoli)
+  .put('/:id', authentication, authorization, poliController.putPoli)
+  .delete('/:id', authentication, authorization, poliController.deletePoli);
 
 module.exports = Route;

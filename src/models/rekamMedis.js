@@ -6,7 +6,17 @@ const connection = require('../config/connection');
 module.exports = {
 
   getRekamMedisById: (id) => new Promise((resolve, reject) => {
-    connection.query('SELECT rekam_medis.*,rak.kode_rak FROM rekam_medis INNER JOIN rak ON rekam_medis.id_rak=rak.id_rak WHERE no_rm=?', id, (error, result) => {
+    connection.query('SELECT rekam_medis.* FROM rekam_medis WHERE no_rm=?', id, (error, result) => {
+      if (!error) {
+        console.log(result);
+        resolve(result[0]);
+      } else {
+        reject(new Error(error));
+      }
+    });
+  }),
+  getRekamMedisByNoKk: (id) => new Promise((resolve, reject) => {
+    connection.query('SELECT rekam_medis.* FROM rekam_medis WHERE no_kk=?', id, (error, result) => {
       if (!error) {
         console.log(result);
         resolve(result[0]);
@@ -30,7 +40,7 @@ module.exports = {
     });
   }),
   getAllRekamMedis: () => new Promise((resolve, reject) => {
-    connection.query('SELECT rekam_medis.*,rak.kode_rak FROM rekam_medis INNER JOIN rak ON rekam_medis.id_rak=rak.id_rak', (error, result) => {
+    connection.query('SELECT rekam_medis.no_rm,rekam_medis.no_kk,rekam_medis.created_at,rekam_medis.updated_at FROM rekam_medis', (error, result) => {
       if (!error) {
         resolve(result);
       } else {
@@ -41,7 +51,7 @@ module.exports = {
   getCountRekamMedisById: (no_rm) => new Promise((resolve, reject) => {
     connection.query('SELECT count(*) as jumlah_anggota FROM detail_rekam_medis WHERE no_rm=?', no_rm, (error, result) => {
       if (!error) {
-        resolve(result);
+        resolve(result[0]);
       } else {
         reject(new Error(error));
       }
@@ -52,7 +62,9 @@ module.exports = {
       if (!error) {
         const newData = {
           id: parseInt(no_rm),
-          ...setData,
+          ...result,
+          field: { id: parseInt(no_rm), ...setData },
+
         };
         resolve(newData);
       } else {
@@ -68,6 +80,15 @@ module.exports = {
           ...result,
         };
         resolve(newData);
+      } else {
+        reject(new Error(error));
+      }
+    });
+  }),
+  getRekamMedisCount: (id) => new Promise((resolve, reject) => {
+    connection.query('select COUNT(rekam_medis.no_rm) as jumlah_rekam_medis from rekam_medis', id, (error, result) => {
+      if (!error) {
+        resolve(result[0]);
       } else {
         reject(new Error(error));
       }

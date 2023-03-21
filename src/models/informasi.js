@@ -42,17 +42,21 @@ module.exports = {
   }),
   // instagramCodeGenerator:()=>
   getFromInstagram: (token) => new Promise((resolve, reject) => {
+    console.log(token);
     try {
       axios
         .get(`https://graph.instagram.com/me/media?fields=id,media_type,media_url,caption,timestamp&access_token=${token}`, {
           headers: { 'Accept-Encoding': 'gzip,deflate,compress' },
+
         })
         .then((response) => {
           resolve(response.data.data);
         })
         .catch((error) => {
-          console.log(error.response.data.error);
-          reject(new Error(error.response.data.error));
+          console.log(error);
+
+          if (error.response) { reject(new Error(error.response?.data?.error)); }
+          reject(new Error('Network Error'));
         });
     } catch (error) {
       console.log(error);
@@ -63,7 +67,9 @@ module.exports = {
       if (!error) {
         const newData = {
           id: parseInt(id_informasi),
-          ...setData,
+          ...result,
+          field: { id: parseInt(id_informasi), ...setData },
+
         };
         resolve(newData);
       } else {
@@ -88,6 +94,15 @@ module.exports = {
     fs.unlink(`./public/image/${image}`, (error) => {
       if (!error) {
         resolve(console.log('delete file Successfully'));
+      } else {
+        reject(new Error(error));
+      }
+    });
+  }),
+  getInformasiCount: (id) => new Promise((resolve, reject) => {
+    connection.query('select COUNT(informasi.id_informasi) as jumlah_informasi from informasi', id, (error, result) => {
+      if (!error) {
+        resolve(result[0]);
       } else {
         reject(new Error(error));
       }

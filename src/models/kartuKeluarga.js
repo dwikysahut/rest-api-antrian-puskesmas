@@ -43,7 +43,9 @@ module.exports = {
       if (!error) {
         const newData = {
           id: parseInt(no_kk),
-          ...setData,
+          ...result,
+          field: { id: parseInt(no_kk), ...setData },
+
         };
         resolve(newData);
       } else {
@@ -59,6 +61,15 @@ module.exports = {
           ...result,
         };
         resolve(newData);
+      } else {
+        reject(new Error(error));
+      }
+    });
+  }),
+  getKartuKeluargaCount: (id) => new Promise((resolve, reject) => {
+    connection.query('select COUNT(kartu_keluarga.no_kk) as jumlah_kartu_keluarga from kartu_keluarga', id, (error, result) => {
+      if (!error) {
+        resolve(result[0]);
       } else {
         reject(new Error(error));
       }

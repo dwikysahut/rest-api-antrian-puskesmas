@@ -10,6 +10,7 @@ module.exports = {
     result.message = message;
     result.data = data;
 
+    // return untuk memastikan end of function
     return response.status(result.status).json(result);
   },
   nodemailer: (email, subject, template) => {
@@ -29,7 +30,7 @@ module.exports = {
     };
     return transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.log(error);
+        throw (new Error('Gagal mengirimkan email'));
         return false;
       }
 
@@ -45,5 +46,51 @@ module.exports = {
       result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }
     return result;
+  },
+  timeToMinute: (time) => {
+    const timeArr = time.split(':');
+    const dateToMinute = (timeArr[0] * 60) + (timeArr[1]);
+    return dateToMinute;
+  },
+  getFullDate: (data = null) => {
+    const date = data ? new Date(data) : new Date();
+    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+  },
+  getFullTime: () => {
+    const date = new Date();
+    return `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+  },
+  convertMontName: (month) => {
+    switch (month) {
+      case 'January':
+        return 'Januari';
+
+      case 'February':
+        return 'Februari';
+
+      case 'March':
+        return 'Maret';
+
+      case 'May':
+        return 'Mei';
+
+      case 'June':
+        return 'Juni';
+
+      case 'July':
+        return 'Juli';
+
+      case 'August':
+        return 'Agustus';
+
+      case 'October':
+        return 'Oktober';
+
+      case 'December':
+        return 'Desember';
+
+      default:
+        return month;
+    }
   },
 };

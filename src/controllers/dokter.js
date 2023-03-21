@@ -4,6 +4,7 @@ const helper = require('../helpers');
 module.exports = {
   getAllDokter: async (request, response) => {
     try {
+      // console.log(request.io);
       const result = await dokterModel.getAllDokter();
       return helper.response(response, 200, { message: 'Get All data Dokter berhasil' }, result);
     } catch (error) {
@@ -48,12 +49,17 @@ module.exports = {
       const result = await dokterModel.putDokter(id, setData);
       return helper.response(response, 200, { message: 'Put data Dokter berhasil' }, result);
     } catch (error) {
+      console.log(error);
       return helper.response(response, 500, { message: 'Put data Dokter gagal' });
     }
   },
   deleteDokter: async (request, response) => {
     try {
       const { id } = request.params;
+      const checkData = await dokterModel.getDokterById(id);
+      if (!checkData) {
+        return helper.response(response, 404, { message: 'Data Dokter tidak Ditemukan' });
+      }
       const result = await dokterModel.deleteDokter(id);
       return helper.response(response, 200, { message: 'Delete data Dokter berhasil' }, result);
     } catch (error) {

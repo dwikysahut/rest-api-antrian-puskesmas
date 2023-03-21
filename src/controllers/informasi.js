@@ -4,14 +4,15 @@ const req = require('request');
 const axios = require('axios');
 const informasiModel = require('../models/informasi');
 const helper = require('../helpers');
+const constant = require('../utils/constant');
 require('dotenv').config();
 
-let access_token = '';
+// let access_token = '';
 module.exports = {
   getAllInformasi: async (request, response) => {
     try {
       const resultFirst = await informasiModel.getAllInformasi();
-      const resultSecond = await informasiModel.getFromInstagram(access_token);
+      const resultSecond = await informasiModel.getFromInstagram(constant.token);
       const newResultSecond = resultSecond.map((item) => ({
         id_informasi: item.id, judul_informasi: null, isi_informasi: item.caption, gambar: item.media_url, created_at: item.timestamp,
       }));
@@ -22,7 +23,7 @@ module.exports = {
       return helper.response(response, 200, { message: 'Get All data Informasi berhasil' }, combineResult);
     } catch (error) {
       console.log(error);
-      return helper.response(response, 500, { message: 'Get All data Informasi gagal' });
+      return helper.response(response, 500, { message: `Get All data Informasi gagal, ${error?.message}` });
     }
   },
   getAllInformasiFromDB: async (request, response) => {
@@ -32,12 +33,12 @@ module.exports = {
       return helper.response(response, 200, { message: 'Get data Informasi dari database berhasil' }, result);
     } catch (error) {
       console.log(error);
-      return helper.response(response, 500, { message: 'Get data Informasi dari database berhasil' });
+      return helper.response(response, 500, { message: `Get All data Informasi dari database gagal, ${error?.message}` });
     }
   },
   getAllInformasiFromInstagram: async (request, response) => {
     try {
-      const result = await informasiModel.getFromInstagram(access_token);
+      const result = await informasiModel.getFromInstagram(constant.token);
       const resultFormatted = result.map((item) => ({
         id_informasi: item.id, judul_informasi: null, isi_informasi: item.caption, gambar: item.media_url, created_at: item.timestamp,
       }));
@@ -132,8 +133,13 @@ module.exports = {
   generateToken: async (request, response) => {
     try {
       const { code } = request.query;
-      const redirect_uri = 'https://localhost:5000/informasi/instagram/generate-token';
+      const { redirect_uri } = constant;
+      console.log(code);
+      // console.log(redirect_uri);
 
+      // mendapatkan token short life time
+      // let resultToken;
+      // try {
       const resultToken = await axios.post(
         'https://api.instagram.com/oauth/access_token',
         {
@@ -150,14 +156,24 @@ module.exports = {
           },
         },
       );
+      // } catch (error) {
+      //   helper.response(response, 500, { message: 'Error to get short life time token' }, { error });
+      // }
 
+      console.log(`ss${resultToken.data.access_token}`);
+      // mendapatkan token long life time
       // access_token = JSON.parse(resultToken);
-      const resp = await axios.get(`https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${process.env.INSTA_APP_SECRET}&access_token=${resultToken.data.access_token}`);
+      try {
+        const resp = await axios.get(`https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${process.env.INSTA_APP_SECRET}&access_token=${resultToken.data.access_token}`);
+        constant.token = resp.data.access_token;
+      } catch (error) {
+        helper.response(response, 500, { message: 'Error to get long life time token' }, {});
+      }
 
-      access_token = resp.data.access_token;
-      helper.response(response, 200, { message: 'Generate token berhasil' }, resp.data);
+      helper.response(response, 200, { message: 'Generate token berhasil' }, {});
     } catch (error) {
       console.log(error);
+      helper.response(response, 500, { message: 'Generate token gagal' }, error);
     }
   },
 };

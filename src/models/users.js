@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 /* eslint-disable radix */
 /* eslint-disable camelcase */
 const connection = require('../config/connection');
@@ -6,6 +7,31 @@ module.exports = {
 
   getUserById: (id) => new Promise((resolve, reject) => {
     connection.query('SELECT * FROM users WHERE user_id=?', id, (error, result) => {
+      if (!error) {
+        resolve(result[0]);
+      } else {
+        reject(new Error(error));
+      }
+    });
+  }),
+  getUserByEmail: (id) => new Promise((resolve, reject) => {
+    connection.query('SELECT * FROM users WHERE email=?', id, (error, result) => {
+      if (!error) {
+        resolve(result[0]);
+      } else {
+        reject(new Error(error));
+      }
+    });
+  }),
+  getUserProfileByNIK: (nik) => new Promise((resolve, reject) => {
+    connection.query('SELECT users.*, kartu_keluarga.kepala_keluarga FROM users  INNER JOIN kartu_keluarga ON users.no_kk=kartu_keluarga.no_kk WHERE user_id=?', nik, (error, result) => {
+      delete result[0].verif_akun;
+      delete result[0].verif_email;
+      delete result[0].kode_verifikasi_email;
+      delete result[0].id_socket;
+      delete result[0].password;
+      delete result[0].created_at;
+      delete result[0].updated_at;
       if (!error) {
         resolve(result[0]);
       } else {
@@ -28,7 +54,7 @@ module.exports = {
     });
   }),
   getAllUsers: () => new Promise((resolve, reject) => {
-    connection.query('SELECT * FROM users', (error, result) => {
+    connection.query('SELECT users.*,kartu_keluarga.kepala_keluarga FROM users INNER JOIN kartu_keluarga ON kartu_keluarga.no_kk=users.no_kk', (error, result) => {
       if (!error) {
         resolve(result);
       } else {
@@ -42,7 +68,9 @@ module.exports = {
       if (!error) {
         const newData = {
           id: parseInt(id_user),
-          ...setData,
+          ...result,
+          field: { id: parseInt(id_user), ...setData },
+
         };
         delete newData.password;
         resolve(newData);
@@ -59,6 +87,15 @@ module.exports = {
           ...result,
         };
         resolve(newData);
+      } else {
+        reject(new Error(error));
+      }
+    });
+  }),
+  getUsersCount: (id) => new Promise((resolve, reject) => {
+    connection.query('select COUNT(users.user_id) as jumlah_users from users', id, (error, result) => {
+      if (!error) {
+        resolve(result[0]);
       } else {
         reject(new Error(error));
       }
