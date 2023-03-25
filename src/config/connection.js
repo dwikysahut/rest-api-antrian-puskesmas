@@ -1,5 +1,6 @@
 const mysql = require('mysql');
 require('dotenv').config();
+const bluebird = require('bluebird');
 
 const connection = mysql.createConnection({
   host: process.env.DB_HOST,
@@ -11,4 +12,5 @@ connection.connect((error) => {
   if (error) throw error;
   console.log('Database connect successfully');
 });
+connection.query = bluebird.promisify(connection.query);
 module.exports = connection;

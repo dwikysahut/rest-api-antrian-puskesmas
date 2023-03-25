@@ -32,8 +32,8 @@ module.exports = {
       }
     });
   }),
-  getAntrianSequentialByDate: (tgl_periksa) => new Promise((resolve, reject) => {
-    connection.query('SELECT max(urutan) as last_number FROM antrian WHERE tanggal_periksa=?', tgl_periksa, (error, result) => {
+  getAntrianSequentialByDate: (tgl_periksa, id_praktek) => new Promise((resolve, reject) => {
+    connection.query('SELECT max(urutan) as last_number FROM antrian WHERE tanggal_periksa=? AND id_praktek=?', [tgl_periksa, id_praktek], (error, result) => {
       if (!error) {
         resolve(result[0]);
       } else {
@@ -41,8 +41,8 @@ module.exports = {
       }
     });
   }),
-  getAntrianAvailableByDate: (tgl_periksa, id_praktek) => new Promise((resolve, reject) => {
-    connection.query('SELECT * FROM antrian WHERE tanggal_periksa=? AND id_praktek=? ', [tgl_periksa, id_praktek], (error, result) => {
+  getAntrianByDate: (tgl_periksa, id_praktek) => new Promise((resolve, reject) => {
+    connection.query('SELECT * FROM antrian WHERE tanggal_periksa=? AND id_praktek=? ORDER BY urutan ASC', [tgl_periksa, id_praktek], (error, result) => {
       if (!error) {
         resolve(result);
       } else {
@@ -50,7 +50,7 @@ module.exports = {
       }
     });
   }),
-  getAntrianByDate: (tgl_periksa, id_praktek) => new Promise((resolve, reject) => {
+  getAntrianAvailableByDate: (tgl_periksa, id_praktek) => new Promise((resolve, reject) => {
     connection.query('SELECT * FROM antrian WHERE tanggal_periksa=? AND id_praktek=? AND antrian.status_antrian < \'6\' ORDER BY urutan ASC ', [tgl_periksa, id_praktek], (error, result) => {
       if (!error) {
         resolve(result);
@@ -94,7 +94,7 @@ module.exports = {
   }),
 
   getAllAntrian: () => new Promise((resolve, reject) => {
-    connection.query('SELECT * FROM view_antrian', (error, result) => {
+    connection.query('SELECT * FROM view_antrian ORDER BY status_antrian = 6 OR status_antrian = 7 , urutan ASC', (error, result) => {
       if (!error) {
         resolve(result);
       } else {
