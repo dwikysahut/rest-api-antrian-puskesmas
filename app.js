@@ -17,6 +17,7 @@ const socketIo = require('socket.io');
 const { instagramToken } = require('./src/utils/instaRefresh.cron');
 
 const routeNavigator = require('./src/index');
+const usersConnected = require('./src/utils/user-connected');
 
 const app = express();
 require('dotenv').config();
@@ -41,7 +42,6 @@ app.use((req, res, next) => {
   return next();
 });
 
-const usersConnected = [];
 io.on('connection', (socket) => {
   socket.on('user-connected', (userId) => {
     usersConnected[userId] = socket.id;

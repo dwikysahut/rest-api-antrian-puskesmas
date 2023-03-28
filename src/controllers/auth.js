@@ -202,7 +202,7 @@ module.exports = {
 
       const isTokenAvailable = refreshTokens.includes(refreshToken);
       if (!isTokenAvailable) {
-        return helper.response(response, 403, { message: 'refresh token gagal, silahkan login kembali' });
+        return helper.response(response, 401, { message: 'refresh token gagal, silahkan login kembali' });
       }
 
       const result = await authModel.refreshToken(refreshToken);

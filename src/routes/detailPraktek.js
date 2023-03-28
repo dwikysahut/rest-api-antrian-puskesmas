@@ -6,8 +6,8 @@ const { authentication, authorization } = require('../middleware/auth');
 
 Route
   .get('/', authentication, detailPraktekController.getAllDetailPraktek)
-  .get('/:id', authentication, authorization, detailPraktekController.getDetailPraktekById)
-  .get('/praktek/:id', authentication, authorization, detailPraktekController.getDetailPraktekByIdPraktek)
+  .get('/:id', authentication, detailPraktekController.getDetailPraktekById)
+  .get('/praktek/:id', authentication, detailPraktekController.getDetailPraktekByIdPraktek)
   .post('/', authentication, authorization, detailPraktekController.postDetailPraktek)
   .put('/:id', authentication, authorization, detailPraktekController.putDetailPraktek)
   .delete('/:id', authentication, authorization, detailPraktekController.deleteDetailPraktek);

@@ -59,6 +59,15 @@ module.exports = {
       }
     });
   }),
+  getAntrianJustByDate: (tgl_periksa) => new Promise((resolve, reject) => {
+    connection.query('SELECT * FROM antrian WHERE tanggal_periksa=? ORDER BY urutan ASC ', [tgl_periksa], (error, result) => {
+      if (!error) {
+        resolve(result);
+      } else {
+        reject(new Error(error));
+      }
+    });
+  }),
   // main
   getAntrianAvailableByFilter: (query) => new Promise((resolve, reject) => {
     connection.query(`SELECT * FROM view_antrian ${query}`, (error, result) => {
