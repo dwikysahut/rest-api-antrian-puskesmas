@@ -45,7 +45,7 @@ app.use((req, res, next) => {
 io.on('connection', (socket) => {
   socket.on('user-connected', (userId) => {
     usersConnected[userId] = socket.id;
-    console.log(usersConnected); // ojIckSD2jqNzOqIrAGzL
+    console.log('connectin'); // ojIckSD2jqNzOqIrAGzL
   });
 });
 // const server = app.listen(process.env.PORT, process.env.HOST_LOCAL, () => {

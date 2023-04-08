@@ -15,7 +15,16 @@ module.exports = {
   }),
 
   getAntrianByUserId: (id) => new Promise((resolve, reject) => {
-    connection.query('SELECT * FROM view_antrian WHERE user_id=?', id, (error, result) => {
+    connection.query('SELECT * FROM view_antrian WHERE user_id=? ORDER BY status_antrian = 6 OR status_antrian = 7 , urutan ASC', id, (error, result) => {
+      if (!error) {
+        resolve(result);
+      } else {
+        reject(new Error(error));
+      }
+    });
+  }),
+  getAntrianByNoKK: (id) => new Promise((resolve, reject) => {
+    connection.query('SELECT * FROM view_antrian WHERE no_kk=? ORDER BY status_antrian = 6 OR status_antrian = 7 , urutan ASC', id, (error, result) => {
       if (!error) {
         resolve(result);
       } else {
@@ -41,7 +50,7 @@ module.exports = {
       }
     });
   }),
-  getAntrianByDate: (tgl_periksa, id_praktek) => new Promise((resolve, reject) => {
+  getAntrianByDateAndPraktek: (tgl_periksa, id_praktek) => new Promise((resolve, reject) => {
     connection.query('SELECT * FROM antrian WHERE tanggal_periksa=? AND id_praktek=? ORDER BY urutan ASC', [tgl_periksa, id_praktek], (error, result) => {
       if (!error) {
         resolve(result);

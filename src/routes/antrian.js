@@ -7,6 +7,10 @@ const { authentication, authorization } = require('../middleware/auth');
 Route
   .get('/', antrianController.getAllAntrianByFilter)
   .get('/:id', authentication, antrianController.getAntrianById)
+  .get('/all/user', authentication, antrianController.getAntrianByUserId)
+  .get('/kartu-keluarga/:id', authentication, antrianController.getAntrianByNoKK)
+  .get('/check/available', antrianController.getInformasiAntrianSementara)
+  .get('/check/kuota/available', antrianController.getInformasiKuotaAntrian)
   .get('/all/praktek', antrianController.getAntrianByPraktek)
   .get('/pasien/:id', authentication, antrianController.getAntrianByNik)
   .post('/', authentication, antrianController.postAntrian)

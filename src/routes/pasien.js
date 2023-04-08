@@ -9,6 +9,7 @@ Route
   .get('/', authentication, pasienController.getAllPasien)
   .get('/:id', authentication, pasienController.getPasienById)
   .get('/antrian/:id', authentication, pasienController.getPasienDataForAntrianByID)
+  .get('/antrian/kartu-keluarga/:id', authentication, pasienController.getPasienDataForAntrianByIDAndKk)
   .get('/rekam-medis/:id', authentication, pasienController.getAllPasienByNoRM)
   .get('/rekam-medis/not-input/:id', authentication, pasienController.getAllPasienByNoRMNotInput)
   .get('/kartu-keluarga/:id', authentication, pasienController.getAllPasienByNoKK)

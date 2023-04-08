@@ -53,10 +53,32 @@ module.exports = {
   getPasienDataForAntrianByID: async (request, response) => {
     try {
       const { id } = request.params;
+      console.log('getbyid');
       const result = await pasienModel.getPasienAntrianById(id);
       if (!result) {
         return helper.response(response, 404, { message: 'Data Pasien tidak Ditemukan' });
       }
+      return helper.response(response, 200, { message: 'Get data Pasien berhasil' }, result);
+    } catch (error) {
+      return helper.response(response, 500, { message: 'Get data Pasien gagal' });
+    }
+  },
+  getPasienDataForAntrianByIDAndKk: async (request, response) => {
+    try {
+      const { id } = request.params;
+      const { no_kk } = request.query;
+      // no_kk = '2415566167112524';
+      const result = await pasienModel.getPasienAntrianById(id);
+      if (!result) {
+        return helper.response(response, 404, { message: 'Data Pasien tidak Ditemukan' });
+      }
+      // cek apabila data pasien yang ditemukan berbeda nomor kk dengan pendaftar
+      if (result) {
+        if (result.no_kk != no_kk) {
+          return helper.response(response, 403, { message: 'Data Pasien memiliki No. KK yang berbeda' });
+        }
+      }
+
       return helper.response(response, 200, { message: 'Get data Pasien berhasil' }, result);
     } catch (error) {
       return helper.response(response, 500, { message: 'Get data Pasien gagal' });
@@ -90,6 +112,7 @@ module.exports = {
   getAllPasienByNoKK: async (request, response) => {
     try {
       const { id } = request.params;
+      console.log('ini');
       const result = await pasienModel.getAllPasienByNoKK(id);
 
       return helper.response(response, 200, { message: 'Get data Data Pasien berdasarkan NO KK berhasil' }, result);

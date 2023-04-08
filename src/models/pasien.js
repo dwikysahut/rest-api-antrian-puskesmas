@@ -25,6 +25,17 @@ module.exports = {
       }
     });
   }),
+
+  getPasienAntrianByIdAndKk: (id, no_kk) => new Promise((resolve, reject) => {
+    connection.query('SELECT * FROM view_pasien_antrian WHERE nik=? and no_kk=?', [id, no_kk], (error, result) => {
+      if (!error) {
+        console.log(result);
+        resolve(result[0]);
+      } else {
+        reject(new Error(error));
+      }
+    });
+  }),
   getAllPasienByNoRM: (id) => new Promise((resolve, reject) => {
     connection.query('select pasien.*,rekam_medis.no_rm,kartu_keluarga.no_kk from pasien INNER JOIN  kartu_keluarga on kartu_keluarga.no_kk=pasien.no_kk INNER JOIN rekam_medis on rekam_medis.no_rm=kartu_keluarga.no_rm where rekam_medis.no_rm=?', id, (error, result) => {
       if (!error) {
@@ -44,7 +55,7 @@ module.exports = {
     });
   }),
   getAllPasienByNoKK: (id) => new Promise((resolve, reject) => {
-    connection.query('select pasien.*,rekam_medis.no_rm,kartu_keluarga.no_kk,kartu_keluarga.kepala_keluarga from pasien INNER JOIN  kartu_keluarga on kartu_keluarga.no_kk=pasien.no_kk INNER JOIN rekam_medis on rekam_medis.no_rm=kartu_keluarga.no_rm where kartu_keluarga.no_kk=?', id, (error, result) => {
+    connection.query('select pasien.*,rekam_medis.no_rm,kartu_keluarga.no_kk,kartu_keluarga.kepala_keluarga from pasien LEFT JOIN  kartu_keluarga on kartu_keluarga.no_kk=pasien.no_kk LEFT JOIN rekam_medis on rekam_medis.no_rm=kartu_keluarga.no_rm where kartu_keluarga.no_kk=?', id, (error, result) => {
       if (!error) {
         resolve(result);
       } else {

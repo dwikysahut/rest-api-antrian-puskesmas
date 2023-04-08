@@ -56,6 +56,20 @@ module.exports = {
     const date = data ? new Date(data) : new Date();
     return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   },
+  getBeforeDate: (data = null) => {
+    const date = data ? new Date(data) : new Date();
+    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+  },
+  getCustomDate: (type, dateNow) => {
+    const date = new Date();
+    if (type.includes('before')) {
+      date.setDate(new Date(dateNow).getDate() - 1);
+    }
+    if (type.includes('after')) {
+      date.setDate(new Date(dateNow).getDate() + 1);
+    }
+    return date;
+  },
   getFullTime: () => {
     const date = new Date();
     return `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;

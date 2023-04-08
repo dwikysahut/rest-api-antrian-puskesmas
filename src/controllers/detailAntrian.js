@@ -35,6 +35,18 @@ module.exports = {
       return helper.response(response, 500, { message: 'Get data Detail Antrian gagal' });
     }
   },
+  getDetailFinishedAntrianByIdAntrian: async (request, response) => {
+    try {
+      const { id } = request.params;
+      const result = await detailAntrianModel.getDetailAntrianByIdAntrianAndTahapPelayanan(id, 3);
+      if (!result) {
+        return helper.response(response, 404, { message: 'Data Detail Antrian tidak Ditemukan' });
+      }
+      return helper.response(response, 200, { message: 'Get data Detail Antrian berhasil' }, result);
+    } catch (error) {
+      return helper.response(response, 500, { message: 'Get data Detail Antrian gagal' });
+    }
+  },
 
   postDetailAntrian: async (request, response) => {
     try {

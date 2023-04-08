@@ -41,9 +41,13 @@ module.exports = {
         },
       );
       if (checkDataRM) {
-        if (checkDataRM.no_kk !== setData.no_kk) {
-          await kartuKeluargaModel.putKartuKeluarga(checkDataRM.no_kk, { no_rm: null });
-
+        if (checkDataRM.no_kk !== null && checkDataRM.no_kk !== setData.no_kk) {
+          return helper.response(response, 409, { message: 'No Rekam Medis sudah digunakan' });
+          // opsi pergantian no kk lama dan baru saat no rm sama
+          // await kartuKeluargaModel.putKartuKeluarga(checkDataRM.no_kk, { no_rm: null });
+          // await rekamMedisModel.putRekamMedis(setData.no_rm, { no_kk: setData.no_kk });
+        }
+        if (checkDataRM.no_kk == null) {
           await rekamMedisModel.putRekamMedis(setData.no_rm, { no_kk: setData.no_kk });
         }
         // await kartuKeluargaModel.putKartuKeluarga(checkDataRM.no_kk, { no_rm: setData.no_rm });
@@ -69,20 +73,25 @@ module.exports = {
       const checkDataRM = await rekamMedisModel.getRekamMedisById(setData.no_rm);
 
       if (checkDataRM) {
-        if (checkDataRM.no_kk !== id) {
-          await kartuKeluargaModel.putKartuKeluarga(id, { no_rm: null });
+        if (checkDataRM.no_kk !== null && checkDataRM.no_kk !== setData.no_kk) {
+          return helper.response(response, 409, { message: 'No Rekam Medis sudah digunakan' });
+          // opsi pergantian no kk lama dan baru saat no rm sama
+          // await kartuKeluargaModel.putKartuKeluarga(checkDataRM.no_kk, { no_rm: null });
+          // await rekamMedisModel.putRekamMedis(setData.no_rm, { no_kk: setData.no_kk });
+        }
+        if (checkDataRM.no_kk == null && setData.no_rm) {
           await rekamMedisModel.putRekamMedis(setData.no_rm, { no_kk: id });
         }
       } else if (!checkDataRM) {
         await rekamMedisModel.postRekamMedis({ no_rm: setData.no_rm, no_kk: id });
       }
       const result = await kartuKeluargaModel.putKartuKeluarga(id, setData);
-      if (setData.no_rm) {
-        await rekamMedisModel.putRekamMedis(
-          setData.no_rm,
-          { no_kk: id },
-        );
-      }
+      // if (setData.no_rm) {
+      //   await rekamMedisModel.putRekamMedis(
+      //     setData.no_rm,
+      //     { no_kk: id },
+      //   );
+      // }
 
       return helper.response(response, 200, { message: 'Put data Kartu Keluarga berhasil' }, result);
     } catch (error) {
