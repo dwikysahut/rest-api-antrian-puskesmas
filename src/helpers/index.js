@@ -1,3 +1,4 @@
+/* eslint-disable no-return-await */
 /* eslint-disable no-plusplus */
 const nodemailer = require('nodemailer');
 
@@ -47,6 +48,16 @@ module.exports = {
     }
     return result;
   },
+  fcmSendNotif: async ({
+    admin, tokens, title, body,
+  }) => await admin.messaging().sendMulticast({
+    tokens,
+    notification: {
+      title,
+      body,
+
+    },
+  }),
   timeToMinute: (time) => {
     const timeArr = time.split(':');
     const dateToMinute = (timeArr[0] * 60) + (timeArr[1]);

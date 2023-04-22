@@ -1,3 +1,5 @@
+/* eslint-disable camelcase */
+/* eslint-disable eqeqeq */
 const helper = require('../helpers');
 const pasienModel = require('../models/pasien');
 const kartuKeluargaModel = require('../models/kartuKeluarga');

@@ -44,6 +44,7 @@ module.exports = {
         return helper.response(response, 409, { message: 'Data Poli telah tercatat pada tabel praktek' });
       }
       const result = await praktekModel.postPraktek(setDataPraktek);
+      // put foreign key pada data poli dengan id praktek
       await poliModel.putPoli(setDataPraktek.id_poli, { id_praktek: result.id });
 
       return helper.response(response, 201, { message: 'Post data Praktek berhasil' }, result);
@@ -69,7 +70,9 @@ module.exports = {
       }
 
       const result = await praktekModel.putPraktek(id, setDataPraktek);
-      await poliModel.putPoli(setDataPraktek.id_poli, { id_praktek: id });
+      if (checkData.id_poli != setDataPraktek.id_poli) {
+        await poliModel.putPoli(setDataPraktek.id_poli, { id_praktek: id });
+      }
 
       return helper.response(response, 200, { message: 'Put data Praktek berhasil' }, result);
     } catch (error) {

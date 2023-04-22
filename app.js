@@ -14,10 +14,12 @@ const fs = require('fs');
 const path = require('path');
 
 const socketIo = require('socket.io');
+const serviceAccount = require('./firebase.json');
 const { instagramToken } = require('./src/utils/instaRefresh.cron');
-
+const NotificationServiceInstance = require('./src/utils/NotificationService');
 const routeNavigator = require('./src/index');
 const usersConnected = require('./src/utils/user-connected');
+const fcmUsers = require('./src/utils/array-fcm');
 
 const app = express();
 require('dotenv').config();
@@ -43,10 +45,38 @@ app.use((req, res, next) => {
 });
 
 io.on('connection', (socket) => {
-  socket.on('user-connected', (userId) => {
-    usersConnected[userId] = socket.id;
-    console.log('connectin'); // ojIckSD2jqNzOqIrAGzL
+  console.log(`⚡: ${socket.id} user just connected!`);
+  socket.on('user-connected', async (userId, token) => {
+    usersConnected[socket.id] = userId;
+    const indexData = fcmUsers.findIndex((item) => item.userId == userId);
+    if (indexData !== -1) {
+      fcmUsers[indexData] = {
+        userId,
+        token,
+      };
+    } else {
+      fcmUsers.push({
+        userId,
+        token,
+      });
+    }
+
+    //= =======================================================
+
+    //= ======================================================
+    console.log(`userId ${userId}`);
+    console.log(usersConnected); // ojIckSD2jqNzOqIrAGzL
+    console.log(fcmUsers);
   });
+  socket.on('disconnect', async () => {
+    socket.disconnect();
+    console.log('🔥: A user disconnected');
+    delete usersConnected[socket.id];
+    console.log(usersConnected);
+    // coba send notif
+    await NotificationServiceInstance.publishNotification('halo', 'coba', fcmUsers.map((item) => item.token));
+  });
+  console.log(usersConnected); // ojIckSD2jqNzOqIrAGzL
 });
 // const server = app.listen(process.env.PORT, process.env.HOST_LOCAL, () => {
 //   const host = server.address().address;

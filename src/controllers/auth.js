@@ -82,7 +82,7 @@ module.exports = {
 
       const comparePass = bcrypt.compareSync(password, userByNIK.password);
       if (!comparePass) return helper.response(response, 401, { message: 'Password salah' });
-
+      // mengecek apakah akun user (pasien) login di perangkat web (admin)
       if (type === 'web' && userByNIK.role > 2) {
         return helper.response(response, 401, { message: 'Login gagal, Tidak memiliki akses' });
       }
@@ -119,6 +119,7 @@ module.exports = {
     try {
       const { email } = request.body;
       const accountWithEmail = await authModel.getUserByEmail(email);
+      // ketika email belum terdaftar
       if (!accountWithEmail) {
         return helper.response(response, 403, { message: 'Email belum terdaftar' });
       }
@@ -152,6 +153,7 @@ module.exports = {
       if (parseInt(userWithNIK.verif_email) === 1) {
         return helper.response(response, 409, { message: 'Email pada akun telah terverifikasi' });
       }
+      // melakukan pengecekan kode verifikasi yang dimasukkan user dengan kode pada database
       const compare = bcrypt.compareSync(kode_verifikasi_email, userWithNIK.kode_verifikasi_email);
       if (!compare) {
         return helper.response(response, 401, { message: 'Kode verifikasi salah' });
@@ -183,8 +185,9 @@ module.exports = {
 
         return helper.response(response, 200, { message: 'verifikasi akun berhasil', result });
       }
-
+      // menghapus data user dari database
       const result = await usersModel.deleteUser(setData.user_id);
+      // mengirim notifikasi melalui email
       const htmlTemplate = `<center><h2>Status Verifikasi Akun</h2><hr><h4>
       MOHON MAAF :(, Sayangnya, akun anda telah <bold>DITOLAK</bold>, silahkan melakukan pendaftaran kembali  
       </h4></center>`;

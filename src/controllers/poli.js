@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 const helper = require('../helpers');
 const poliModel = require('../models/poli');
 const praktekModel = require('../models/praktek');
@@ -47,6 +48,11 @@ module.exports = {
         kode_poli: setData.kode_poli,
       };
       // console.log(setData);
+      const checkData = await poliModel.getAllPoli();
+
+      if (checkData.filter((item) => item.nama_poli.includes(setDataPoli.nama_poli)).length > 0) {
+        return helper.response(response, 409, { message: 'Data Poli sudah ada' }, {});
+      }
 
       const result = await poliModel.postPoli(setDataPoli);
       return helper.response(response, 201, { message: 'Post data Poli berhasil' }, result);
@@ -66,6 +72,10 @@ module.exports = {
       const checkData = await poliModel.getPoliById(id);
       if (!checkData) {
         return helper.response(response, 404, { message: 'Data Poli tidak Ditemukan' });
+      }
+      const checkDataFromName = await poliModel.getAllPoli();
+      if (checkDataFromName.filter((item) => item.nama_poli.includes(setDataPoli.nama_poli)).length > 0) {
+        return helper.response(response, 409, { message: 'Data Poli sudah ada' }, {});
       }
       const result = await poliModel.putPoli(id, setDataPoli);
       return helper.response(response, 200, { message: 'Put data Poli berhasil' }, result);

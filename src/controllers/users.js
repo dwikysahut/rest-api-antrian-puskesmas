@@ -21,6 +21,7 @@ module.exports = {
         no_telepon: item.no_telepon,
         jenis_kelamin: item.jenis_kelamin,
         tanggal_lahir: item.tanggal_lahir,
+        is_suspend: item.is_suspend,
         kepala_keluarga: item.kepala_keluarga,
         created_at: item.created_at,
         updated_at: item.updated_at,
@@ -70,6 +71,7 @@ module.exports = {
         verif_akun: 1,
         role: setData.role,
         no_telepon: setData.no_telepon,
+        is_suspend: 0,
         jenis_kelamin: setData.jenis_kelamin,
         tanggal_lahir: setData.tanggal_lahir.split('/').reverse().join('-'),
 
