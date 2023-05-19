@@ -7,6 +7,8 @@ const userModel = require('../models/users');
 const antrianModel = require('../models/antrian');
 const praktekModel = require('../models/praktek');
 // const userModel = require('../models/antrian');
+const NotificationServiceInstance = require('../utils/NotificationService');
+const fcmUsers = require('../utils/array-fcm');
 const connection = require('../config/connection');
 
 module.exports = {
@@ -82,11 +84,18 @@ module.exports = {
       // };
       // const result = await notifikasiModel.postNotifikasi(setDataNotifAsal);
 
+      const checkData = await antrianModel.getAntrianById(setDataNotif.id_antrian_tujuan);
+
       // edit request_tukar penukar (pengirim )
       await antrianModel.putAntrian(setData.id_antrian, { request_tukar: 0 });
       await connection.commit();
 
+      // trigger event melalui socket
       io.emit('server-postRequest', { });
+      const tokens = fcmUsers.filter((item) => item.userId.split('--')[0] == checkData.user_id_tujuan).map((item) => item.token);
+      if (tokens.length > 0) {
+        await NotificationServiceInstance.publishNotification('Permintaan Penukaran antrian baru', 'Seorang pasien ingin menukarkan antrian dengan anda ', tokens);
+      }
 
       return helper.response(response, 201, { message: 'Post data Request Notifikasi  berhasil' }, result);
     } catch (error) {
@@ -131,6 +140,8 @@ module.exports = {
 
         // put notif ke user asal yang mengajukan  pertukaran
         const result = await notifikasiModel.putNotifikasi(checkDataTujuan.id_notifikasi, setDataNotifAsal);
+        const tokens = fcmUsers.filter((item) => item.userId.split('--')[0] == checkDataTujuan.user_id).map((item) => item.token);
+        if (tokens.length > 0) { await NotificationServiceInstance.publishNotification('Status Permintaan Penukaran antrian ', 'Permintaan Penukaran anda "DITERIMA" ', tokens); }
 
         //  request_tukar penukar tetap 0
         ///---------------------
@@ -150,6 +161,10 @@ module.exports = {
             //  request_tukar penukar kembali menjadi 1
             await antrianModel.putAntrian(check[i].id_antrian, { request_tukar: 1 });
           }
+          const tokenList = fcmUsers.filter((item) => check.some((itemCompare) => item.userId.split('--')[0] == itemCompare.user_id)).map((item) => item.token);
+          if (tokenList.length > 0) {
+            await NotificationServiceInstance.publishNotification('Status Permintaan Penukaran antrian ', 'Permintaan Penukaran anda "DITERIMA" ', tokenList);
+          }
         }
         // tukar antrian
         const antrianAsal = await antrianModel.getAntrianById(checkDataTujuan.id_antrian);
@@ -157,11 +172,13 @@ module.exports = {
         await antrianModel.putAntrian(antrianAsal.id_antrian, {
           urutan: antrianTujuan.urutan,
           // nomor_antrian: antrianTujuan.nomor_antrian,
+          waktu_pelayanan: antrianTujuan.waktu_pelayanan,
           estimasi_waktu_pelayanan: antrianTujuan.estimasi_waktu_pelayanan,
         });
         await antrianModel.putAntrian(antrianTujuan.id_antrian, {
           urutan: antrianAsal.urutan,
           // nomor_antrian: antrianAsal.nomor_antrian,
+          waktu_pelayanan: antrianAsal.waktu_pelayanan,
           estimasi_waktu_pelayanan: antrianAsal.estimasi_waktu_pelayanan,
         });
 
@@ -190,6 +207,10 @@ module.exports = {
         is_opened: '0',
       };
       const result = await notifikasiModel.postNotifikasi(setDataNotifAsal);
+      const tokens = fcmUsers.filter((item) => item.userId.split('--')[0] == checkDataTujuan.user_id).map((item) => item.token);
+      if (tokens.length > 0) {
+        await NotificationServiceInstance.publishNotification('Status Permintaan Penukaran antrian ', 'Permintaan Penukaran anda "DITOLAK" ', tokens);
+      }
 
       //  request_tukar penukar kembali menjadi 1
       await antrianModel.putAntrian(checkDataTujuan.id_antrian, { request_tukar: 1 });
@@ -282,6 +303,23 @@ module.exports = {
 
       const result = await notifikasiModel.postNotifikasi(setData);
       return helper.response(response, 201, { message: 'Post data Notifikasi  berhasil' }, result);
+    } catch (error) {
+      console.log(error);
+      return helper.response(response, 500, { message: 'Post data Notifikasi  gagal' });
+    }
+  },
+  postPublishNotifikasi: async (request, response) => {
+    try {
+      const setData = request.body;
+      const tokens = fcmUsers.filter((item) => item.userId.split('--')[0] == setData.user_id).map((item) => item.token);
+      if (tokens.length > 0) {
+        await NotificationServiceInstance.publishNotification(setData.title, setData.body, tokens);
+      }
+
+      // setData.is_opened = 0;
+
+      // const result = await notifikasiModel.postNotifikasi(setData);
+      return helper.response(response, 201, { message: 'Publish Notifikasi  berhasil' });
     } catch (error) {
       console.log(error);
       return helper.response(response, 500, { message: 'Post data Notifikasi  gagal' });

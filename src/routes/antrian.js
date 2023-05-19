@@ -11,12 +11,13 @@ Route
   .get('/kartu-keluarga/:id', authentication, antrianController.getAntrianByNoKK)
   .get('/check/available', antrianController.getInformasiAntrianSementara)
   .get('/check/kuota/available', antrianController.getInformasiKuotaAntrian)
+  .get('/check/estimasi-waktu/:id', antrianController.getEstimasiWaktu)
   .get('/all/praktek', antrianController.getAntrianByPraktek)
   .get('/pasien/:id', authentication, antrianController.getAntrianByNik)
   .post('/', authentication, antrianController.postAntrian)
-  .post('/petugas', authentication, antrianController.postAntrianByPetugas)
+  .post('/petugas', authentication, authorization, antrianController.postAntrianByPetugas)
   .put('/:id', authentication, antrianController.putAntrian)
-  .put('/status/:id', authentication, antrianController.putStatusAntrian)
-  .delete('/:id', authentication, authorization, antrianController.deleteAntrian);
+  .put('/status/:id', authentication, antrianController.putStatusAntrian);
+// .delete('/:id', authentication, authorization, antrianController.deleteAntrian);
 
 module.exports = Route;

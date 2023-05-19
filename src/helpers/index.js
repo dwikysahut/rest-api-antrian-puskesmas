@@ -1,6 +1,7 @@
 /* eslint-disable no-return-await */
 /* eslint-disable no-plusplus */
 const nodemailer = require('nodemailer');
+const bcrypt = require('bcrypt');
 
 require('dotenv').config();
 
@@ -58,6 +59,7 @@ module.exports = {
 
     },
   }),
+  hashPassword: (password) => bcrypt.hashSync(password, 6),
   timeToMinute: (time) => {
     const timeArr = time.split(':');
     const dateToMinute = (timeArr[0] * 60) + (timeArr[1]);
@@ -66,6 +68,39 @@ module.exports = {
   getFullDate: (data = null) => {
     const date = data ? new Date(data) : new Date();
     return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+  },
+  getFullTimeByCustom(date) {
+    return `${
+      date.getHours().toString().length < 2
+        ? `0${date.getHours()}`
+        : `${date.getHours()}`
+    }:${
+      date.getMinutes().toString().length < 2
+        ? `0${date.getMinutes()}`
+        : `${date.getMinutes()}`
+    }:${
+      date.getSeconds().toString().length < 2
+        ? `0${date.getSeconds()}`
+        : `${date.getSeconds()}`
+    }`;
+  },
+  getCalculatedTime(minute, time = null) {
+    const date = new Date();
+
+    // saat tanggal  sama dengan hari ini
+    if (time == null) {
+      date.setHours(8, 0, 0);
+    } else {
+      // saat tanggal tidak sama
+
+      date.setHours(
+        time.split(':')[0],
+        time.split(':')[1],
+        time.split(':')[2],
+      );
+    }
+
+    return this.getFullTimeByCustom(new Date(date.getTime() + minute * 60000));
   },
   getBeforeDate: (data = null) => {
     const date = data ? new Date(data) : new Date();

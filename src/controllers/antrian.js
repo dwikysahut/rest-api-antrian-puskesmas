@@ -17,7 +17,9 @@ const usersModel = require('../models/users');
 const notifikasiModel = require('../models/notifikasi');
 const pasienModel = require('../models/pasien');
 const helper = require('../helpers');
+const fcmUsers = require('../utils/array-fcm');
 const connection = require('../config/connection');
+const NotificationServiceInstance = require('../utils/NotificationService');
 
 const {
   getFullDate, getFullTime, constTimeToMinute, TimeToMinute, timeToMinute,
@@ -116,11 +118,17 @@ module.exports = {
         sisa_antrian: UnfinishedQueueBeforeNow.length || 0,
         nomor_antrian: `${getPraktek.kode_poli}-${getDataMaxNomorAntrian ? getDataMaxNomorAntrian.nomor + 1 : 1}`,
         estimasi_waktu_pelayanan: totalEstimasiWaktu,
+
         tanggal_periksa,
         id_praktek,
         nama_poli: getPraktek.nama_poli,
 
       };
+      if (getFullTime() <= '08:00:00') {
+        result.waktu_pelayanan = helper.getCalculatedTime(result.sisa_antrian * getPraktek.waktu_pelayanan, UnfinishedQueueBeforeNow[0].waktu_pelayanan);
+      } else {
+        result.waktu_pelayanan = helper.getCalculatedTime(result.sisa_antrian * getPraktek.waktu_pelayanan, null);
+      }
 
       return helper.response(response, 200, { message: 'Get Informasi data Antrian Sementara  berhasil' }, result);
     } catch (error) {
@@ -178,7 +186,7 @@ module.exports = {
       return helper.response(response, 200, { message: 'Kuota Tersedia, Silahkan melakukan pendaftaran' }, allAntrian);
     } catch (error) {
       console.log(error);
-      return helper.response(response, 500, { message: 'Get Informasi data Antrian Sementara gagal' });
+      return helper.response(response, 500, { message: 'Get Informasi Kuota data Antrian  gagal' });
     }
   },
   getAllAntrianByFilter: async (request, response) => {
@@ -198,7 +206,7 @@ module.exports = {
           count += 1;
         }
       }
-      sqlQuery += 'ORDER BY  status_antrian = 6 OR status_antrian = 7, urutan ASC';
+      sqlQuery += `ORDER BY ${request.query.query || ''} status_antrian = 6 OR status_antrian = 7, urutan ASC`;
 
       console.log(sqlQuery);
       const result = await antrianModel.getAntrianAvailableByFilter(sqlQuery);
@@ -260,6 +268,7 @@ module.exports = {
       const { date } = request.query;
       console.log(date);
       const praktekArr = await praktekModel.getAllPraktek();
+      // mendapatkan antrian berdasarkan tanggal periksa/kunjungan
       const antrianArr = await antrianModel.getAntrianJustByDate(date);
       console.log(antrianArr);
 
@@ -277,10 +286,10 @@ module.exports = {
       // const newResult
 
       console.log(newResult);
-      return helper.response(response, 200, { message: 'Get All data Antrian berhasil' }, newResult);
+      return helper.response(response, 200, { message: 'Get All data Antrian by Praktek berhasil' }, newResult);
     } catch (error) {
       console.log(error);
-      return helper.response(response, 500, { message: 'Get All data Antrian gagal' });
+      return helper.response(response, 500, { message: 'Get All data Antrian by Praktek gagal' });
     }
   },
   getAntrianByNik: async (request, response) => {
@@ -305,9 +314,46 @@ module.exports = {
       return helper.response(response, 500, { message: 'Get data Antrian gagal' });
     }
   },
+  getEstimasiWaktu: async (request, response) => {
+    try {
+      const { id } = request.params;
+      const checkData = await antrianModel.getAntrianById(id);
+      const queueHaventBeenCalled = await antrianModel.getAntrianAvailableByDate(checkData.tanggal_periksa, checkData.id_praktek);
+      // mengambil antrian pertama yang belum dilayani sebelum antrian terpilih
+      const topQueue = queueHaventBeenCalled.filter((item) => item.urutan <= checkData.urutan && item.status_antrian < 5)[0];
+
+      const result = {};
+
+      if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id') && getFullTime() > '08:00:00') {
+        if (getFullTime() > checkData.waktu_pelayanan) {
+          // cek jika antrian terplih akan dilayani berikutnya  namun terjadi keterlambatan dipasien sebelumnya
+          if (topQueue.id_antrian == checkData.id_antrian) {
+            console.log('masuk 1');
+            result.waktu_pelayanan = getFullTime();
+            result.estimasi_waktu_pelayanan = '-';
+          } else {
+            console.log('masuk 2');
+            result.waktu_pelayanan = helper.getCalculatedTime(checkData.estimasi_waktu_pelayanan, getFullTime());
+            result.estimasi_waktu_pelayanan = checkData.estimasi_waktu_pelayanan;
+          }
+        } else {
+          console.log('masuk 3');
+          result.waktu_pelayanan = checkData.waktu_pelayanan;
+          result.estimasi_waktu_pelayanan = checkData.estimasi_waktu_pelayanan;
+        }
+      } else {
+        console.log('masuk 4');
+        result.waktu_pelayanan = checkData.waktu_pelayanan;
+        result.estimasi_waktu_pelayanan = checkData.estimasi_waktu_pelayanan;
+      }
+      return helper.response(response, 200, { message: 'Get data Antrian berhasil' }, result);
+    } catch (error) {
+      console.log(error);
+      return helper.response(response, 500, { message: 'Get data Antrian gagal' });
+    }
+  },
 
   postAntrian: async (request, response) => {
-    console.log(request.body.nik);
     await connection.beginTransaction();
     try {
       const setData = request.body;
@@ -413,28 +459,29 @@ module.exports = {
         return helper.response(response, 403, { message: 'Kuota Pendaftaran pada tanggal yang dipilih habis ' }, {});
       }
 
+      const queueHaventBeenCalled = checkAntrianKuota.filter((item) => item.status_antrian < 5);
       // apabila antrian prioritas
       if (setData.prioritas > 0) {
-        if (checkAntrianKuota.length > 0) {
-          const queueHaventBeenCalled = checkAntrianKuota.filter((item) => item.status_antrian < 5);
-
+        if (queueHaventBeenCalled.length > 0) {
           // cek apakah antrian pertama prioritas 0
           if (queueHaventBeenCalled[0].prioritas == 0) {
+            console.log('disini');
             setData.urutan = queueHaventBeenCalled[0].urutan;
 
             // nomor antrian adalah jumlah pasien prioritas terakhir diatasnya +1
             const checkPriorityAntrian = checkAntrian.filter((item) => item.prioritas > 0);
             const lastDataAntrian = checkPriorityAntrian[checkPriorityAntrian.length - 1];
 
-            const lastNomorAntrian = lastDataAntrian ? parseInt(lastDataAntrian.nomor_antrian.split('-')[1].split('')[0], 10) + 1 : 1;
+            const lastNomorAntrian = lastDataAntrian ? parseInt(lastDataAntrian.nomor_antrian.split('-')[1].split('').slice(0, -1).join(''), 10) + 1 : 1;
+
             setData.nomor_antrian = `${getPraktek.kode_poli}-${lastNomorAntrian}P`;
             // update semua urutan pada antrian  menjadi +1
             for (let i = 0; i < queueHaventBeenCalled.length; i++) {
-              await antrianModel.putAntrian(queueHaventBeenCalled[i].id_antrian, { urutan: queueHaventBeenCalled[i].urutan + 1 });
+              await antrianModel.putAntrian(queueHaventBeenCalled[i].id_antrian, { urutan: queueHaventBeenCalled[i].urutan + 1, estimasi_waktu_pelayanan: queueHaventBeenCalled[i].estimasi_waktu_pelayanan + getPraktek.waktu_pelayanan, waktu_pelayanan: helper.getCalculatedTime(queueHaventBeenCalled[i].estimasi_waktu_pelayanan + getPraktek.waktu_pelayanan, queueHaventBeenCalled[0]?.waktu_pelayanan || '08:00:00') });
             }
           } else {
-            // mencari dengan prioritas 1 dan menambahkan setelahnya
-            let firstIndexTarget;
+            // mencari dengan prioritas 0 dan menambahkan sebelumnya
+            let firstIndexTarget = null;
             for (let i = 0; i < queueHaventBeenCalled.length; i++) {
               // menemukan data pertama dengan prioritas 0, lalu ambil urutannya
               // ambil urutan dari data dengan prioritas 0 paling awal
@@ -445,16 +492,26 @@ module.exports = {
                 const checkPriorityAntrian = checkAntrian.filter((item) => item.prioritas > 0);
                 const lastDataAntrian = checkPriorityAntrian[checkPriorityAntrian.length - 1];
 
-                const lastNomorAntrian = lastDataAntrian ? parseInt(lastDataAntrian.nomor_antrian.split('-')[1].split('')[0], 10) + 1 : 1;
+                const lastNomorAntrian = lastDataAntrian ? parseInt(lastDataAntrian.nomor_antrian.split('-')[1].split('').slice(0, -1).join(''), 10) + 1 : 1;
                 setData.nomor_antrian = `${getPraktek.kode_poli}-${lastNomorAntrian}P`;
                 firstIndexTarget = i;
                 break;
               }
             }
-            // update urutan antrian target dan seluruh antrian setelahnya menjadi +1
+            console.log(`firstIndexTarget${firstIndexTarget}`);
+            // saat antrian yang belum dilayani hanyalah prioritas saja
+            if (firstIndexTarget == null) {
+              const checkPriorityAntrian = checkAntrian.filter((item) => item.prioritas > 0);
+              const lastDataAntrian = checkPriorityAntrian[checkPriorityAntrian.length - 1];
+              setData.urutan = lastDataAntrian.urutan + 1;
 
-            for (let i = firstIndexTarget; i < queueHaventBeenCalled.length; i++) {
-              await antrianModel.putAntrian(queueHaventBeenCalled[i].id_antrian, { urutan: queueHaventBeenCalled[i].urutan + 1 });
+              const lastNomorAntrian = lastDataAntrian ? parseInt(lastDataAntrian.nomor_antrian.split('-')[1].split('').slice(0, -1).join(''), 10) + 1 : 1;
+              setData.nomor_antrian = `${getPraktek.kode_poli}-${lastNomorAntrian}P`;
+            } else {
+              // update urutan antrian target dan seluruh antrian setelahnya menjadi +1
+              for (let i = firstIndexTarget; i < queueHaventBeenCalled.length; i++) {
+                await antrianModel.putAntrian(queueHaventBeenCalled[i].id_antrian, { urutan: queueHaventBeenCalled[i].urutan + 1, estimasi_waktu_pelayanan: queueHaventBeenCalled[i].estimasi_waktu_pelayanan + getPraktek.waktu_pelayanan, waktu_pelayanan: helper.getCalculatedTime(queueHaventBeenCalled[i].estimasi_waktu_pelayanan + getPraktek.waktu_pelayanan, queueHaventBeenCalled[0]?.waktu_pelayanan || '08:00:00') });
+              }
             }
           }
         } else {
@@ -470,7 +527,8 @@ module.exports = {
           const antrianPriority = checkAntrian.filter((item) => item.prioritas > 0);
           const lastDataAntrian = antrianPriority[antrianPriority.length - 1];
 
-          const lastNomorAntrian = lastDataAntrian ? parseInt(lastDataAntrian.nomor_antrian.split('-')[1].split('')[0], 10) + 1 : 1;
+          const lastNomorAntrian = lastDataAntrian ? parseInt(lastDataAntrian.nomor_antrian.split('-')[1].split('').slice(0, -1).join(''), 10) + 1 : 1;
+
           setData.nomor_antrian = `${getPraktek.kode_poli}-${lastNomorAntrian}P`;
         }
       }
@@ -530,6 +588,7 @@ module.exports = {
         booking: setData.booking,
         sumber: `${setData.sumber}-${roleSumber}`,
         waktu_kehadiran: null,
+
         request_tukar: setData.request_tukar,
       };
 
@@ -553,7 +612,8 @@ module.exports = {
 
       // setDataAntrian.estimasi_waktu_pelayanan = checkAntrian.length > 0 ? totalEstimasiWaktu : getPraktek.waktu_pelayanan;
       setDataAntrian.estimasi_waktu_pelayanan = totalEstimasiWaktu;
-
+      // set waktu pelayanan di antrian
+      setDataAntrian.waktu_pelayanan = helper.getCalculatedTime(setDataAntrian.estimasi_waktu_pelayanan, checkAntrianKuota[0]?.waktu_pelayanan || '08:00:00');
       // 1. cek data kartu keluarga
       const checkKK = await kartuKeluargaModel.getnoKKByID(setDataKk.no_kk);
       if (!checkKK) {
@@ -632,7 +692,7 @@ module.exports = {
       };
 
       if (result) {
-        io.emit('server-addAntrian', { result: newResult });
+        io.emit('server-addAntrian', { result: newResult, tanggal_periksa: setDataAntrian.tanggal_periksa, id_praktek: setDataAntrian.id_praktek });
       }
       await connection.commit();
       return helper.response(response, 201, { message: 'Post data Antrian berhasil' }, newResult);
@@ -650,7 +710,7 @@ module.exports = {
       const { io, token } = request;
       setData.tanggal_periksa = getFullDate(null);
 
-      // setData.tgl_periksa = setData.tgl_periksa.split('/').reverse().join('-');
+      // setData.tanggal_periksa = setData.tanggal_periksa.split('/').reverse().join('-');
 
       // cek apakah hari minggu
       const date = new Date(setData.tanggal_periksa.split('/').reverse().join('-'));
@@ -684,9 +744,10 @@ module.exports = {
       }
 
       let roleSumber;
-      if (request.token.result.role === 1) {
+      console.log(request.token);
+      if (request.token?.result.role == 1) {
         roleSumber = 'Admin';
-      } else if (request.token.result.role === 2) {
+      } else if (request.token.result.role == 2) {
         roleSumber = 'Petugas';
       } else {
         roleSumber = 'Pasien';
@@ -705,48 +766,62 @@ module.exports = {
       //   return helper.response(response, 403, { message: 'Kuota Pendaftaran pada tanggal yang dipilih habis ' }, {});
       // }
 
+      // cek untuk antrian yang belum dilayani
+      const queueHaventBeenCalled = checkAntrianKuota.filter((item) => item.status_antrian < 5);
       // apabila antrian prioritas
       if (setData.prioritas > 0) {
-        if (checkAntrianKuota.length > 0) {
-          const queueHaventBeenCalled = checkAntrianKuota.filter((item) => item.status_antrian < 5);
-
+        if (queueHaventBeenCalled.length > 0) {
           // cek apakah antrian pertama prioritas 0
           if (queueHaventBeenCalled[0].prioritas == 0) {
+            console.log('disini');
             setData.urutan = queueHaventBeenCalled[0].urutan;
+            // setData.waktu_pelayanan = queueHaventBeenCalled[0].waktu_pelayanan;
 
             // nomor antrian adalah jumlah pasien prioritas terakhir diatasnya +1
             const checkPriorityAntrian = checkAntrian.filter((item) => item.prioritas > 0);
             const lastDataAntrian = checkPriorityAntrian[checkPriorityAntrian.length - 1];
 
-            const lastNomorAntrian = lastDataAntrian ? parseInt(lastDataAntrian.nomor_antrian.split('-')[1].split('')[0], 10) + 1 : 1;
+            const lastNomorAntrian = lastDataAntrian ? parseInt(lastDataAntrian.nomor_antrian.split('-')[1].split('').slice(0, -1).join(''), 10) + 1 : 1;
+
             setData.nomor_antrian = `${getPraktek.kode_poli}-${lastNomorAntrian}P`;
             // update semua urutan pada antrian  menjadi +1
             for (let i = 0; i < queueHaventBeenCalled.length; i++) {
-              await antrianModel.putAntrian(queueHaventBeenCalled[i].id_antrian, { urutan: queueHaventBeenCalled[i].urutan + 1 });
+              await antrianModel.putAntrian(queueHaventBeenCalled[i].id_antrian, { urutan: queueHaventBeenCalled[i].urutan + 1, estimasi_waktu_pelayanan: queueHaventBeenCalled[i].estimasi_waktu_pelayanan + getPraktek.waktu_pelayanan, waktu_pelayanan: helper.getCalculatedTime(queueHaventBeenCalled[i].estimasi_waktu_pelayanan + getPraktek.waktu_pelayanan, queueHaventBeenCalled[0]?.waktu_pelayanan || '08:00:00') });
             }
           } else {
-            // mencari dengan prioritas 1 dan menambahkan setelahnya
-            let firstIndexTarget;
+            // mencari dengan prioritas 0 dan menambahkan sebelumnya
+            let firstIndexTarget = null;
             for (let i = 0; i < queueHaventBeenCalled.length; i++) {
               // menemukan data pertama dengan prioritas 0, lalu ambil urutannya
               // ambil urutan dari data dengan prioritas 0 paling awal
               if (queueHaventBeenCalled[i].prioritas == 0) {
                 setData.urutan = queueHaventBeenCalled[i].urutan;
+                // setData.waktu_pelayanan = queueHaventBeenCalled[i].waktu_pelayanan;
 
                 // nomor antrian adalah jumlah pasien prioritas terakhir diatasnya +1
                 const checkPriorityAntrian = checkAntrian.filter((item) => item.prioritas > 0);
                 const lastDataAntrian = checkPriorityAntrian[checkPriorityAntrian.length - 1];
 
-                const lastNomorAntrian = lastDataAntrian ? parseInt(lastDataAntrian.nomor_antrian.split('-')[1].split('')[0], 10) + 1 : 1;
+                const lastNomorAntrian = lastDataAntrian ? parseInt(lastDataAntrian.nomor_antrian.split('-')[1].split('').slice(0, -1).join(''), 10) + 1 : 1;
                 setData.nomor_antrian = `${getPraktek.kode_poli}-${lastNomorAntrian}P`;
                 firstIndexTarget = i;
                 break;
               }
             }
-            // update urutan antrian target dan seluruh antrian setelahnya menjadi +1
+            console.log(`firstIndexTarget${firstIndexTarget}`);
+            // saat antrian yang belum dilayani hanyalah prioritas saja
+            if (firstIndexTarget == null) {
+              const checkPriorityAntrian = checkAntrian.filter((item) => item.prioritas > 0);
+              const lastDataAntrian = checkPriorityAntrian[checkPriorityAntrian.length - 1];
+              setData.urutan = lastDataAntrian.urutan + 1;
 
-            for (let i = firstIndexTarget; i < queueHaventBeenCalled.length; i++) {
-              await antrianModel.putAntrian(queueHaventBeenCalled[i].id_antrian, { urutan: queueHaventBeenCalled[i].urutan + 1 });
+              const lastNomorAntrian = lastDataAntrian ? parseInt(lastDataAntrian.nomor_antrian.split('-')[1].split('').slice(0, -1).join(''), 10) + 1 : 1;
+              setData.nomor_antrian = `${getPraktek.kode_poli}-${lastNomorAntrian}P`;
+            } else {
+              // update urutan antrian target dan seluruh antrian setelahnya menjadi +1
+              for (let i = firstIndexTarget; i < queueHaventBeenCalled.length; i++) {
+                await antrianModel.putAntrian(queueHaventBeenCalled[i].id_antrian, { urutan: queueHaventBeenCalled[i].urutan + 1, estimasi_waktu_pelayanan: queueHaventBeenCalled[i].estimasi_waktu_pelayanan + getPraktek.waktu_pelayanan, waktu_pelayanan: helper.getCalculatedTime(queueHaventBeenCalled[i].estimasi_waktu_pelayanan + getPraktek.waktu_pelayanan, queueHaventBeenCalled[0]?.waktu_pelayanan || '08:00:00') });
+              }
             }
           }
         } else {
@@ -762,10 +837,12 @@ module.exports = {
           const antrianPriority = checkAntrian.filter((item) => item.prioritas > 0);
           const lastDataAntrian = antrianPriority[antrianPriority.length - 1];
 
-          const lastNomorAntrian = lastDataAntrian ? parseInt(lastDataAntrian.nomor_antrian.split('-')[1].split('')[0], 10) + 1 : 1;
+          const lastNomorAntrian = lastDataAntrian ? parseInt(lastDataAntrian.nomor_antrian.split('-')[1].split('').slice(0, -1).join(''), 10) + 1 : 1;
+
           setData.nomor_antrian = `${getPraktek.kode_poli}-${lastNomorAntrian}P`;
         }
       } else {
+        // bukan prioritas
       // set urutan dan tiket antrian
         const formattedDate = setData.tanggal_periksa.split('/').reverse().join('-');
         // mendapatkan last urutan di antrian pada taggal dan poli yang dituju
@@ -775,9 +852,9 @@ module.exports = {
         // set nomor antrian dari no antrian terakhir lalu +1 agar selalu berurutan
         // (tidak mengikuti urutan agar saat ada pasien darurat tidak lompat nomornya)
         const antrianNoPriority = checkAntrian.filter((item) => item.prioritas == 0);
-        const lastDataAntrian = antrianNoPriority[antrianNoPriority.length - 1];
+        const lastDataAntrian = antrianNoPriority.map((item) => ({ nomor: parseInt(item.nomor_antrian.split('-')[1], 10) })).sort((a, b) => b.nomor - a.nomor)[0];
 
-        const lastNomorAntrian = lastDataAntrian ? parseInt(lastDataAntrian.nomor_antrian.split('-')[1], 10) + 1 : 1;
+        const lastNomorAntrian = lastDataAntrian ? lastDataAntrian.nomor + 1 : 1;
         setData.nomor_antrian = `${getPraktek.kode_poli}-${lastNomorAntrian}`;
       }
       // status update saat daftar di web(admin) atau petugas  maka status hadir 1 / hadir
@@ -790,7 +867,7 @@ module.exports = {
       const setDataAntrian = {
         id_antrian: new Date().getTime() + Math.floor(Math.random() * 100),
         id_praktek: setData.id_praktek,
-        tanggal_periksa: new Date(getFullDate(null)),
+        tanggal_periksa: setData.tanggal_periksa,
         user_id: request.token.result.user_id,
         booking: 0,
         prioritas: setData.prioritas,
@@ -804,22 +881,38 @@ module.exports = {
       };
 
       // alternatif 2 => dibuat sama 10 menit
-      const UnfinishedQueueBeforeNow = checkAntrian.filter((item) => item.status_antrian < 6);
+      const UnfinishedQueueBeforeNow = checkAntrian.filter((item) => item.status_antrian < 6 && item.urutan < setData.urutan);
       const totalEstimasiWaktu = UnfinishedQueueBeforeNow.length > 0 ? UnfinishedQueueBeforeNow.length * getPraktek.waktu_pelayanan : 0;
 
       // setDataAntrian.estimasi_waktu_pelayanan = checkAntrian.length > 0 ? totalEstimasiWaktu : getPraktek.waktu_pelayanan;
       setDataAntrian.estimasi_waktu_pelayanan = totalEstimasiWaktu;
 
+      // set waktu pelayanan di antrian
+      setDataAntrian.waktu_pelayanan = helper.getCalculatedTime(setDataAntrian.estimasi_waktu_pelayanan, checkAntrianKuota[0]?.waktu_pelayanan || '08:00:00');
       // 5. antrian
       console.log(setDataAntrian);
       await antrianModel.postAntrian(setDataAntrian);
       // get antrian terbaru
       const result = await antrianModel.getAntrianById(setDataAntrian.id_antrian);
-      result.sisa_antrian = checkAntrianKuota.length;
+      // mendapatkkan antrian sebelumnya dengan urutan sebelum antrian yang baru
+      result.sisa_antrian = checkAntrianKuota.filter((item) => item.urutan < setDataAntrian.urutan).length;
       // if (result) {
       console.log('emit');
-      io.emit('server-addAntrian', { result });
+      console.log(checkAntrianKuota);
+
+      io.emit('server-addAntrian', { result, tanggal_periksa: setDataAntrian.tanggal_periksa, id_praktek: setDataAntrian.id_praktek });
+
       // }
+
+      if (setData.prioritas > 0) {
+        console.log(queueHaventBeenCalled);
+        const tokens = fcmUsers.filter((item) => queueHaventBeenCalled.some((itemCompare) => item.userId.split('--')[0] == itemCompare.user_id && itemCompare.sumber == 'Mobile-Pasien')).map((item) => item.token);
+        // console.log(fcmUsers.filter((item) => queueHaventBeenCalled.some((itemCompare) => item.userId == itemCompare.user_id)));
+
+        if (tokens.length > 0) {
+          await NotificationServiceInstance.publishNotification('Pemberitahuan Antrian Prioritas', 'Saat ini terdapat antrian prioritas yang harus segera mendapat penanganan, terimakasih atas pengertiannya', tokens);
+        }
+      }
       await connection.commit();
       return helper.response(response, 201, { message: 'Post data Antrian berhasil' }, result);
     } catch (error) {
@@ -842,10 +935,10 @@ module.exports = {
 
       // cek apakah tanggal hari ini sama dengan tanggal periksa/kunjungan
 
-      if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') !== new Date(getFullDate(null)).toLocaleDateString('id')) {
-        await connection.rollback();
-        return helper.response(response, 401, { message: 'Waktu Kunjungan bukan untuk hari ini' });
-      }
+      // if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') !== new Date(getFullDate(null)).toLocaleDateString('id')) {
+      //   await connection.rollback();
+      //   return helper.response(response, 401, { message: 'Waktu Kunjungan bukan untuk hari ini' });
+      // }
       // cek apakah hari minggu
       const date = new Date(checkData.tanggal_periksa);
       console.log(`hari ${date.getDay()}`);
@@ -948,9 +1041,35 @@ module.exports = {
 
           };
           await detailAntrianModel.postDetailAntrian(setDataDetailAntrian);
+          const getDataAntrianByDate = await antrianModel.getAntrianAvailableByDate(checkData.tanggal_periksa, checkData.id_praktek);
+
+          // edit waktu pelayanan antrian sekarang dengan waktu masuk pelayanan poli.
+          await antrianModel.putAntrian(checkData.id_antrian, { waktu_pelayanan: helper.getCalculatedTime(checkData.estimasi_waktu_pelayanan, null) });
+
+          const nextQueueList = getDataAntrianByDate.filter((item) => item.urutan > checkData.urutan && item.status_antrian < 6);
+          for (let i = 0; i < nextQueueList.length; i++) {
+            await antrianModel.putAntrian(nextQueueList[i].id_antrian, { waktu_pelayanan: helper.getCalculatedTime(nextQueueList[i].estimasi_waktu_pelayanan, getDataAntrianByDate[0]?.waktu_pelayanan || '08:00:00') });
+          }
 
           // update jumlah pelayanan pada praktek dikurangi 1
           await praktekModel.putPraktek(checkData.id_praktek, { jumlah_pelayanan: getPraktek.jumlah_pelayanan - 1 });
+
+          // mengambil 2 antrian berikutnya
+          const nextQueueToNotify = nextQueueList.filter((value, index) => index < 2);
+          if (nextQueueToNotify.length > 0) {
+            for (let i = 0; i < nextQueueToNotify.length; i++) {
+              const tokens = fcmUsers.filter((item) => item.userId.split('--')[0] == nextQueueToNotify[i].user_id).map((item) => item.token);
+              if (tokens.length > 0) {
+                if (i == 1) {
+                  // kirim notifikasi
+                  await NotificationServiceInstance.publishNotification('Informasi Antrian', 'Giliran anda akan segera tiba, pastikan sudah hadir di Puskesmas ', tokens);
+                } else {
+                  // kirim notifikasi
+                  await NotificationServiceInstance.publishNotification('Informasi Antrian', 'Giliran anda akan segera tiba, pastikan sudah hadir di Puskesmas ', tokens);
+                }
+              }
+            }
+          }
         }
 
         // - sedang dilayani-selesai -> update  waktu_selesai_pelayanan detail antrian(pelayanan poli)
@@ -974,12 +1093,14 @@ module.exports = {
           const getPraktek = await praktekModel.getPraktekById(checkData.id_praktek);
 
           // cek apabila total waktu pelayanan pasien
-          // melebihi waktu reata2 pada poli, maka dikurangi dengan rata2 waktu-(total waktu pelayanan- rata2 waktu)
+          // melebihi waktu rata2 pada poli, maka dikurangi dengan rata2 waktu-(total waktu pelayanan- rata2 waktu)
           const different = setDataAntrian.total_waktu_pelayanan > getPraktek.waktu_pelayanan ? getPraktek.waktu_pelayanan - (setDataAntrian.total_waktu_pelayanan - getPraktek.waktu_pelayanan) : getPraktek.waktu_pelayanan;
           if (nextQueueList.length > 0) {
             for (let i = 0; i < nextQueueList.length; i++) {
-              console.log(i);
-              const res = await antrianModel.putAntrian(nextQueueList[i].id_antrian, { estimasi_waktu_pelayanan: nextQueueList[i].estimasi_waktu_pelayanan - different });
+              if (i == 0) {
+                await antrianModel.putAntrian(nextQueueList[i].id_antrian, { estimasi_waktu_pelayanan: nextQueueList[i].estimasi_waktu_pelayanan - nextQueueList[i].estimasi_waktu_pelayanan, waktu_pelayanan: helper.getCalculatedTime(nextQueueList[i].estimasi_waktu_pelayanan, null) });
+              }
+              const res = await antrianModel.putAntrian(nextQueueList[i].id_antrian, { estimasi_waktu_pelayanan: nextQueueList[i].estimasi_waktu_pelayanan - different, waktu_pelayanan: helper.getCalculatedTime(nextQueueList[i].estimasi_waktu_pelayanan, null) });
               console.log(res);
             }
           }
@@ -989,6 +1110,24 @@ module.exports = {
 
           // memanggil antrian berikutnya
           // disini codenya
+          // untuk antrian berikutnya
+          const nextNumberOneAfterNow = nextQueueList[0];
+          if (nextNumberOneAfterNow) {
+            const tokens = fcmUsers.filter((item) => item.userId.split('--')[0] == nextNumberOneAfterNow.user_id).map((item) => item.token);
+            if (tokens.length > 0) {
+              // kirim notifikasi
+              await NotificationServiceInstance.publishNotification('Informasi Antrian', 'Giliran anda telah tiba, bersiaplah menuju poli tujuan', tokens);
+            }
+          }
+          // untuk antrian berikutnya+1
+          const nextNumberTwoAfterNow = nextQueueList[1];
+          if (nextNumberTwoAfterNow) {
+            const tokens = fcmUsers.filter((item) => item.userId.split('--')[0] == nextNumberTwoAfterNow.user_id).map((item) => item.token);
+            if (tokens.length > 0) {
+              // kirim notifikasi
+              await NotificationServiceInstance.publishNotification('Informasi Antrian', 'Giliran anda akan segera tiba, pastikan sudah hadir di Puskesmas', tokens);
+            }
+          }
 
           // update jumlah pelayanan pada praktek
           await praktekModel.putPraktek(checkData.id_praktek, { jumlah_pelayanan: getPraktek.jumlah_pelayanan + 1 });
@@ -996,12 +1135,13 @@ module.exports = {
         if (parseInt(setDataAntrian.status_antrian, 10) === 7) {
           // proses mendapatkan list antrian berikutnya
           const getDataAntrianByDate = await antrianModel.getAntrianByDateAndPraktek(checkData.tanggal_periksa, checkData.id_praktek);
+          // module.exports.updateKuota(setData,checkData)
           const getPraktek = await praktekModel.getPraktekById(checkData.id_praktek);
           const nextQueueList = getDataAntrianByDate.filter((item) => item.urutan > checkData.urutan && item.status_antrian < 6);
           if (nextQueueList.length > 0) {
             for (let i = 0; i < nextQueueList.length; i++) {
               // estimasi waktu antrian setelahnya dikurangi waktu-pelayanan per poli pada tabel praktek
-              await antrianModel.putAntrian(nextQueueList[i].id_antrian, { estimasi_waktu_pelayanan: nextQueueList[i].estimasi_waktu_pelayanan - getPraktek.waktu_pelayanan });
+              await antrianModel.putAntrian(nextQueueList[i].id_antrian, { estimasi_waktu_pelayanan: nextQueueList[i].estimasi_waktu_pelayanan - getPraktek.waktu_pelayanan, waktu_pelayanan: helper.getCalculatedTime(nextQueueList[i].estimasi_waktu_pelayanan, null) });
             }
           }
           // jika membatalkan melalui mobile (pasien) dan h-1 maka kuota daftar pasien kembali 1
@@ -1029,6 +1169,23 @@ module.exports = {
 
           // update jumlah pelayanan pada praktek
           await praktekModel.putPraktek(checkData.id_praktek, { jumlah_pelayanan: getPraktek.jumlah_pelayanan + 1 });
+
+          // mengambil 2 antrian berikutnya
+          const nextQueueToNotify = nextQueueList.filter((value, index) => index < 2);
+          if (nextQueueToNotify.length > 0) {
+            for (let i = 0; i < nextQueueToNotify.length; i++) {
+              const tokens = fcmUsers.filter((item) => item.userId.split('--')[0] == nextQueueToNotify[i].user_id).map((item) => item.token);
+              if (tokens.length > 0) {
+                if (i == 1) {
+                  // kirim notifikasi
+                  await NotificationServiceInstance.publishNotification('Informasi Antrian', 'Giliran anda telah tiba, bersiaplah menuju poli tujuan', tokens);
+                } else {
+                  // kirim notifikasi
+                  await NotificationServiceInstance.publishNotification('Informasi Antrian', 'Giliran anda akan segera tiba, pastikan sudah hadir di Puskesmas ', tokens);
+                }
+              }
+            }
+          }
         }
 
         await antrianModel.putAntrian(id, setDataAntrian);
@@ -1045,9 +1202,15 @@ module.exports = {
           is_opened: '0',
 
         };
+        // kirim notifikasi ke user
+        const tokens = fcmUsers.filter((item) => item.userId.split('--')[0] == checkData.user_id).map((item) => item.token);
+        if (tokens.length > 0) {
+          await NotificationServiceInstance.publishNotification('Status Antrian', `Status antrian anda saat ini "${constant.statusAntrian[parseInt(setDataAntrian.status_antrian, 10)]}"`, tokens);
+        }
+
         await notifikasiModel.postNotifikasi(setDataNotif);
 
-        io.emit('server-editAntrian', { result });
+        io.emit('server-editAntrian', { result, tanggal_periksa: getFullDate(new Date(checkData.tanggal_periksa)), id_praktek: checkData.id_praktek });
         await connection.commit();
         return helper.response(response, 200, { message: 'Put data Antrian berhasil' }, result);
       }
@@ -1071,7 +1234,8 @@ module.exports = {
 
         await antrianModel.putAntrian(id, setDataAntrian);
         const result = await antrianModel.getAntrianById(id);
-        io.emit('server-editAntrian', { result });
+        io.emit('server-editAntrian', { result, tanggal_periksa: getFullDate(new Date(checkData.tanggal_periksa)), id_praktek: checkData.id_praktek });
+
         const newResult = {
           ...result,
 
@@ -1088,6 +1252,10 @@ module.exports = {
 
         };
         await notifikasiModel.postNotifikasi(setDataNotif);
+        const tokens = fcmUsers.filter((item) => item.userId.split('--')[0] == checkData.user_id).map((item) => item.token);
+        if (tokens.length > 0) {
+          await NotificationServiceInstance.publishNotification('Status Kehadiran', `Anda Dinyatakan "${result.status_hadir == 1 ? 'Hadir' : 'Tidak Hadir'}"`, tokens);
+        }
 
         // status terdaftar-diproses
         await connection.commit();
@@ -1097,6 +1265,30 @@ module.exports = {
       console.log(error);
       await connection.rollback();
       return helper.response(response, 500, { message: 'Put data Antrian gagal' });
+    }
+  },
+  updateKuota: async (setData, checkData) => {
+    try {
+      // jika membatalkan melalui mobile (pasien) dan h-1 maka kuota daftar pasien kembali 1
+      if (new Date(getFullDate(null)) < new Date(checkData.tanggal_periksa) && setData?.sumber == 'Mobile-Pasien') {
+        await pasienModel.putPasien(checkData.nik, { kuota_daftar: 1 });
+      }
+      // jika membatalkan  melalui mobile(pasien) dan hari h maka cek juga jam nya kurang dari setengah 8 pagi(jam operasional) maka kuota daftar pasien kembali 1
+      if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id') && getFullTime() < '07:30:00' && setData?.sumber == 'Mobile-Pasien') {
+        await pasienModel.putPasien(checkData.nik, { kuota_daftar: 1 });
+      }
+      // jika membatalkan  melalui mobile (petugas atau pasien) dan hari h maka cek status antrian, apabila masih terdaftar(1) dan juga status antrian adalah 4 (menunggu pelayanan) maka kuota daftar pasien kembali 1
+
+      if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id') && setData?.sumber.includes('Mobile')) {
+        if (checkData.status_antrian == 1 || checkData.status_antrian == 4) { await pasienModel.putPasien(checkData.nik, { kuota_daftar: 1 }); }
+      }
+
+      // jika membatalkan melalui web admin dan status nya terdaftar / menunggu pelayanan
+      if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id') && setData?.sumber.toLowerCase() === 'web') {
+        if (checkData.status_antrian == 1 || checkData.status_antrian == 4) { await pasienModel.putPasien(checkData.nik, { kuota_daftar: 1 }); }
+      }
+    } catch (error) {
+      await connection.rollback();
     }
   },
   putAntrian: async (request, response) => {
@@ -1264,7 +1456,11 @@ module.exports = {
       const newResult = { ...result, ...setDataPutAntrian };
 
       if (result) {
-        io.emit('server-editAntrian', { result });
+        io.emit('server-editAntrian', { result, tanggal_periksa: getFullDate(new Date(checkData.tanggal_periksa)), id_praktek: checkData.id_praktek });
+      }
+      const tokens = fcmUsers.filter((item) => item.userId.split('--')[0] == checkData.user_id).map((item) => item.token);
+      if (tokens.length > 0) {
+        await NotificationServiceInstance.publishNotification('Status Kehadiran', `Anda Dinyatakan "${result.status_hadir == 1 ? 'Hadir' : 'Tidak Hadir'}"`);
       }
       await connection.commit();
       return helper.response(response, 200, { message: 'Put data Antrian berhasil' }, result);

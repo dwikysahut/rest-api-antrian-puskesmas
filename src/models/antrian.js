@@ -121,7 +121,6 @@ module.exports = {
     });
   }),
   putAntrian: (id_antrian, setData) => new Promise((resolve, reject) => {
-    // eslint-disable-next-line no-unused-vars
     connection.query('UPDATE antrian set ? WHERE id_antrian=?', [setData, id_antrian], (error, result) => {
       if (!error) {
         const newData = {

@@ -10,6 +10,7 @@ Route
   .get('/:id', authentication, notifikasiController.getNotifikasiById)
   .get('/user/:id', authentication, notifikasiController.getNotifikasiByUser)
   .post('/', authentication, notifikasiController.postNotifikasi)
+  .post('/publish-notifikasi', authentication, notifikasiController.postPublishNotifikasi)
   .post('/reverse/request', authentication, notifikasiController.postReverseRequest)
   .put('/reverse/response/:id', authentication, notifikasiController.putActionReverseRequest)
   .post('/reverse/offline/response', authentication, notifikasiController.postReverseWithOfflineQueue)

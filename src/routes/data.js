@@ -5,7 +5,7 @@ const dataController = require('../controllers/data');
 const { authRefreshToken, authentication, authorization } = require('../middleware/auth');
 
 Route
-  .get('/count', authentication, dataController.getAllDataCount)
-  .get('/antrian', authentication, dataController.getAntrianByMonth);
+  .get('/count', authentication, authorization, dataController.getAllDataCount)
+  .get('/antrian', authentication, authorization, dataController.getAntrianByMonth);
 
 module.exports = Route;

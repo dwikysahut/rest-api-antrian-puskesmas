@@ -11,11 +11,15 @@ require('dotenv').config();
 module.exports = {
   getAllInformasi: async (request, response) => {
     try {
+      // mengambil informasi dari db
       const resultFirst = await informasiModel.getAllInformasi();
+      // mengambil informasi dari Instagram
       const resultSecond = await informasiModel.getFromInstagram(constant.token);
+      // melakukan mapping untuk menyamakan atribut object
       const newResultSecond = resultSecond.map((item) => ({
         id_informasi: item.id, judul_informasi: null, isi_informasi: item.caption, gambar: item.media_url, created_at: item.timestamp,
       }));
+      // menggabungkan kedua data
       const combineResult = [
         ...resultFirst,
         ...newResultSecond,

@@ -43,8 +43,8 @@ module.exports = {
       const setDataDetailPraktek = {
         id_praktek: setData.id_praktek,
         id_dokter: setData.id_dokter,
-        hari_praktek: setData.hari_praktek,
-        jam_praktek: setData.jam_praktek,
+        // hari_praktek: setData.hari_praktek,
+        // jam_praktek: setData.jam_praktek,
         status_operasional: setData.status_operasional,
 
       };

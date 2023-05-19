@@ -185,9 +185,11 @@ module.exports = {
 
       if (setData.password) {
         const newPasswordHash = bcrypt.hashSync(setData.password, 6);
+        // proses hash password baru
+        // const newPasswordHash = helper.hashPassword(setData.password);
         setData.password = newPasswordHash;
-        // console.log(setData.password);
       }
+      // convert tanggal lahir menjadi format 'yyyy-mm-dd'
       if (setData.tanggal_lahir) {
         setData.tanggal_lahir = setData.tanggal_lahir.split('/').reverse().join('-');
       }
@@ -197,6 +199,7 @@ module.exports = {
           no_kk: setData.no_kk,
           kepala_keluarga: setData.kepala_keluarga ? setData.kepala_keluarga : null,
         };
+        // cek saat nomor kk tidak ditemukan maka post data kartu keluarga
         if (!noKKChecked) {
           await kartuKeluargaModel.postKartuKeluarga(setDataKK);
           console.log('input kk');
@@ -210,7 +213,6 @@ module.exports = {
       delete newResult.verif_akun;
       delete newResult.verif_email;
       delete newResult.kode_verifikasi_email;
-      delete newResult.id_socket;
       delete newResult.password;
 
       return helper.response(response, 200, { message: 'Ubah data User berhasil' }, newResult);

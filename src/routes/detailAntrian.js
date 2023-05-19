@@ -3,6 +3,7 @@ const express = require('express');
 const Route = express.Router();
 const detailAntrianController = require('../controllers/detailAntrian');
 const { authRefreshToken } = require('../middleware/auth');
+const { authentication, authorizationAdmin } = require('../middleware/auth');
 
 Route
   .get('/', detailAntrianController.getAllDetailAntrian)

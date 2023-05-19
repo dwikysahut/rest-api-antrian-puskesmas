@@ -20,7 +20,8 @@ module.exports = {
     });
   },
   authorization: (request, response, next) => {
-    const token = request.headers.authorization;
+    const bearerToken = request.headers.authorization !== undefined ? request.headers.authorization.split(' ') : '';
+    const token = bearerToken ? bearerToken[1] : null;
     jwt.verify(token, process.env.SECRET_KEY, (error, result) => {
       console.log(request.token);
       let role;
@@ -30,10 +31,12 @@ module.exports = {
       } else {
         role = request.token.result.role;
       }
-      if (parseInt(role) > 1) {
+      if (parseInt(role) > 2) {
         helper.response(response, 401, { message: 'You don\'t have accesss' });
       } else {
+        console.log('ininih');
         request.token = result;
+        console.log(result);
         next();
       }
     });

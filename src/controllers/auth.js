@@ -78,9 +78,13 @@ module.exports = {
       const { user_id, password, type } = request.body;
 
       const userByNIK = await authModel.getUserByNIK(user_id);
+
+      // mengecek apakah user ID benar
       if (!userByNIK) { return helper.response(response, 401, { message: 'User ID salah' }); }
 
+      // membandingkan hasil enkripsi password masukan user dengan password pada database sesuai user ID
       const comparePass = bcrypt.compareSync(password, userByNIK.password);
+
       if (!comparePass) return helper.response(response, 401, { message: 'Password salah' });
       // mengecek apakah akun user (pasien) login di perangkat web (admin)
       if (type === 'web' && userByNIK.role > 2) {
@@ -93,7 +97,7 @@ module.exports = {
       if (parseInt(userByNIK.verif_akun) === 0) return helper.response(response, 401, { message: 'Akun belum diverifikasi oleh Admin, silahkan menunggu verifikasi akun' });
 
       delete userByNIK.password;
-
+      // sign token dan refresh token
       const token = jwt.sign({ result: userByNIK }, process.env.SECRET_KEY, { expiresIn: '6d' });
       const refreshToken = jwt.sign({ result: userByNIK }, process.env.REFRESH_TOKEN_SECRET_KEY, { expiresIn: '14d' });
 
@@ -102,6 +106,7 @@ module.exports = {
         token,
         refreshToken,
       };
+
       delete resultData.created_at;
       delete resultData.updated_at;
       refreshTokens.push(refreshToken);
@@ -114,21 +119,33 @@ module.exports = {
       return helper.response(response, 500, { message: 'Login gagal' }, error);
     }
   },
+  async emailCheck(email) {
+    const accountWithEmail = await authModel.getUserByEmail(email);
+    return accountWithEmail;
+  },
+  async newPasswordGenerator() {
+    return generator.generate({ length: 10, numbers: true });
+  },
 
   forgotPassword: async (request, response) => {
     try {
       const { email } = request.body;
+      // Proses pengecekan Email
+      // const accountWithEmail = await module.exports.emailCheck(email);
       const accountWithEmail = await authModel.getUserByEmail(email);
-      // ketika email belum terdaftar
+      // // ketika email belum terdaftar
       if (!accountWithEmail) {
         return helper.response(response, 403, { message: 'Email belum terdaftar' });
       }
+      // generate password baru
+      // const newPassword = module.exports.newPasswordGenerator();
       const newPassword = generator.generate({
         length: 10,
         numbers: true,
       });
       const newPasswordHash = bcrypt.hashSync(newPassword, 6);
 
+      // membuat template email dan mengirim ke email pengguna yang terdaftar pada database
       const htmlTemplate = `<center><h2>Here's your new password</h2><hr>new password : <h4>${
         newPassword
       }</h4></center>`;
