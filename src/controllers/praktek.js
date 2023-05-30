@@ -9,6 +9,7 @@ module.exports = {
       const result = await praktekModel.getAllPraktek();
       return helper.response(response, 200, { message: 'Get All data Praktek berhasil' }, result);
     } catch (error) {
+      console.log(error);
       return helper.response(response, 500, { message: 'Get All data Praktek gagal' });
     }
   },

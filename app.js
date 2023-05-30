@@ -71,7 +71,7 @@ io.on('connection', (socket) => {
       console.log(`userId ${userId}`);
       console.log(usersConnected); // ojIckSD2jqNzOqIrAGzL
       console.log(fcmUsers);
-      await NotificationServiceInstance.publishNotification('halo', 'coba', fcmUsers.map((item) => item.token));
+      // await NotificationServiceInstance.publishNotification('halo', 'coba', fcmUsers.map((item) => item.token));
     }
     console.log(usersConnected); // ojIckSD2jqNzOqIrAGzL
   });
@@ -81,6 +81,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('client-logout', (userId, token) => {
+    console.log(`disconnect ${userId}`);
     const index = fcmUsers.findIndex((item) => item.userId == `${userId}--${token}`);
     fcmUsers.splice(index, 1);
   });
@@ -91,7 +92,7 @@ io.on('connection', (socket) => {
     delete usersConnected[socket.id];
     console.log(usersConnected);
     // coba send notif
-    if (fcmUsers.length > 0) { await NotificationServiceInstance.publishNotification('halo', 'coba', fcmUsers.map((item) => item.token)); }
+    // if (fcmUsers.length > 0) { await NotificationServiceInstance.publishNotification('halo', 'coba', fcmUsers.map((item) => item.token)); }
   });
 
   console.log(usersConnected); // ojIckSD2jqNzOqIrAGzL

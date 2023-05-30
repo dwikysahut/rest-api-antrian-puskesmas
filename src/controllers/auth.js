@@ -16,6 +16,7 @@ module.exports = {
   createAccount: async (request, response) => {
     try {
       const setData = request.body;
+      console.log(setData.tanggal_lahir);
       const setDataUsers = {
         user_id: setData.user_id,
         nama_user: setData.nama_user,
@@ -165,7 +166,7 @@ module.exports = {
 
       const userWithNIK = await authModel.getUserByNIK(user_id);
       if (!userWithNIK) {
-        return helper.response(response, 404, { message: `Akun dengan user id ${user_id} tidak ditekan` });
+        return helper.response(response, 404, { message: `Akun dengan user id ${user_id} tidak ditemukan` });
       }
       if (parseInt(userWithNIK.verif_email) === 1) {
         return helper.response(response, 409, { message: 'Email pada akun telah terverifikasi' });
@@ -200,7 +201,7 @@ module.exports = {
         </h4></center>`;
         await helper.nodemailer(checkData.email, 'Status Verifikasi Akun EQ Antrian', htmlTemplate);
 
-        return helper.response(response, 200, { message: 'verifikasi akun berhasil', result });
+        return helper.response(response, 200, { message: 'Verifikasi akun berhasil', result });
       }
       // menghapus data user dari database
       const result = await usersModel.deleteUser(setData.user_id);

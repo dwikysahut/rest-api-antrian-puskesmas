@@ -85,13 +85,16 @@ module.exports = {
       // const result = await notifikasiModel.postNotifikasi(setDataNotifAsal);
 
       const checkData = await antrianModel.getAntrianById(setDataNotif.id_antrian_tujuan);
+      const checkDataAsal = await antrianModel.getAntrianById(setDataNotif.id_antrian);
 
       // edit request_tukar penukar (pengirim )
       await antrianModel.putAntrian(setData.id_antrian, { request_tukar: 0 });
       await connection.commit();
 
       // trigger event melalui socket
-      io.emit('server-postRequest', { });
+      io.emit('server-postRequest', {
+        user_id_asal: checkDataAsal.user_id, user_id_tujuan: checkData.user_id, tanggal_periksa: helper.getFullDate(new Date(checkDataAsal.tanggal_periksa)), id_praktek: checkDataAsal.id_praktek,
+      });
       const tokens = fcmUsers.filter((item) => item.userId.split('--')[0] == checkData.user_id_tujuan).map((item) => item.token);
       if (tokens.length > 0) {
         await NotificationServiceInstance.publishNotification('Permintaan Penukaran antrian baru', 'Seorang pasien ingin menukarkan antrian dengan anda ', tokens);
@@ -183,7 +186,9 @@ module.exports = {
         });
 
         await connection.commit();
-        io.emit('server-putRequest', { });
+        io.emit('server-putRequest', {
+          user_id_asal: antrianAsal.user_id, user_id_tujuan: antrianTujuan.user_id, tanggal_periksa: helper.getFullDate(new Date(antrianAsal.tanggal_periksa)), id_praktek: antrianAsal.id_praktek,
+        });
         return helper.response(response, 200, { message: 'put data Request Notifikasi  berhasil' }, result);
       }
       //
@@ -212,11 +217,16 @@ module.exports = {
         await NotificationServiceInstance.publishNotification('Status Permintaan Penukaran antrian ', 'Permintaan Penukaran anda "DITOLAK" ', tokens);
       }
 
+      const antrianAsal = await antrianModel.getAntrianById(checkDataTujuan.id_antrian);
+      const antrianTujuan = await antrianModel.getAntrianById(checkDataTujuan.id_antrian_tujuan);
       //  request_tukar penukar kembali menjadi 1
       await antrianModel.putAntrian(checkDataTujuan.id_antrian, { request_tukar: 1 });
 
       await connection.commit();
-      io.emit('server-putRequest', { });
+      io.emit('server-putRequest', {
+        user_id_asal: antrianAsal.user_id, user_id_tujuan: antrianTujuan.user_id, tanggal_periksa: helper.getFullDate(new Date(antrianAsal.tanggal_periksa)), id_praktek: antrianAsal.id_praktek,
+      });
+
       return helper.response(response, 200, { message: 'put data Request Notifikasi  berhasil' }, result);
     } catch (error) {
       console.log(error);
@@ -234,7 +244,7 @@ module.exports = {
         id_antrian: setData.id_antrian,
         text_notifikasi: 'Pengajuan pertukaran antrian',
         jenis_notifikasi: 2,
-        aksi: 2,
+        aksi: 1,
         id_antrian_tujuan: setData.id_antrian_tujuan,
         is_opened: '0',
       };
@@ -275,7 +285,10 @@ module.exports = {
         }
       }
 
-      io.emit('server-putRequest', { });
+      io.emit('server-putRequest', {
+        user_id_asal: antrianAsal.user_id, user_id_tujuan: antrianTujuan.user_id, tanggal_periksa: helper.getFullDate(new Date(antrianAsal.tanggal_periksa)), id_praktek: antrianAsal.id_praktek,
+      });
+
       const result = await notifikasiModel.postNotifikasi(setDataNotif);
       await connection.commit();
       return helper.response(response, 201, { message: 'Post data Reverse Antrian  berhasil' }, result);

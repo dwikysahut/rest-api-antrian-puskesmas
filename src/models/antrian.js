@@ -158,7 +158,7 @@ module.exports = {
     });
   }),
   getAntrianByMonth: () => new Promise((resolve, reject) => {
-    connection.query('select COUNT(*) as jumlah_antrian, MONTH(created_at)+YEAR(created_at) as month_number, MONTHNAME(created_at) as month, YEAR(created_at) as year from antrian group by month_number,month order by month_number', (error, result) => {
+    connection.query('select COUNT(*) as jumlah_antrian, MONTH(created_at)+YEAR(created_at) as month_number, MONTHNAME(created_at) as month, YEAR(created_at) as year from antrian group by month_number,month order by month_number asc', (error, result) => {
       if (!error) {
         resolve(result);
       } else {

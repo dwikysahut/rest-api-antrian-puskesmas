@@ -17,14 +17,15 @@ module.exports = {
       const resultSecond = await informasiModel.getFromInstagram(constant.token);
       // melakukan mapping untuk menyamakan atribut object
       const newResultSecond = resultSecond.map((item) => ({
-        id_informasi: item.id, judul_informasi: null, isi_informasi: item.caption, gambar: item.media_url, created_at: item.timestamp,
+        id_informasi: parseInt(item.id, 10), judul_informasi: null, isi_informasi: item.caption, gambar: item.media_url, created_at: item.timestamp,
       }));
       // menggabungkan kedua data
       const combineResult = [
         ...resultFirst,
         ...newResultSecond,
       ];
-      return helper.response(response, 200, { message: 'Get All data Informasi berhasil' }, combineResult);
+      const sortedCombineResult = combineResult.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      return helper.response(response, 200, { message: 'Get All data Informasi berhasil' }, sortedCombineResult);
     } catch (error) {
       console.log(error);
       return helper.response(response, 500, { message: `Get All data Informasi gagal, ${error?.message}` });
@@ -33,6 +34,7 @@ module.exports = {
   getAllInformasiFromDB: async (request, response) => {
     try {
       const result = await informasiModel.getAllInformasi();
+      console.log(new Date(result[0].created_at).toISOString() < new Date(result[result.length - 1].created_at).toISOString());
 
       return helper.response(response, 200, { message: 'Get data Informasi dari database berhasil' }, result);
     } catch (error) {

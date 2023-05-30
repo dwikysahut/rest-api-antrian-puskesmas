@@ -6,7 +6,7 @@ const { authentication, authorization } = require('../middleware/auth');
 
 Route
   .get('/', antrianController.getAllAntrianByFilter)
-  .get('/:id', authentication, antrianController.getAntrianById)
+  .get('/:id', antrianController.getAntrianById)
   .get('/all/user', authentication, antrianController.getAntrianByUserId)
   .get('/kartu-keluarga/:id', authentication, antrianController.getAntrianByNoKK)
   .get('/check/available', antrianController.getInformasiAntrianSementara)
