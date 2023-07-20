@@ -69,6 +69,7 @@ module.exports = {
       if (!checkData) {
         return helper.response(response, 404, { message: 'Data Praktek tidak Ditemukan' });
       }
+      setData.jumlah_pelayanan ? setDataPraktek.jumlah_pelayanan = setData.jumlah_pelayanan : setDataPraktek.jumlah_pelayanan = checkData.jumlah_pelayanan;
 
       const result = await praktekModel.putPraktek(id, setDataPraktek);
       if (checkData.id_poli != setDataPraktek.id_poli) {

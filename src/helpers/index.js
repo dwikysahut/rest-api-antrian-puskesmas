@@ -3,6 +3,8 @@
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
 
+const holidayList = require('../utils/calendar.json');
+
 require('dotenv').config();
 
 module.exports = {
@@ -101,6 +103,12 @@ module.exports = {
     }
 
     return this.getFullTimeByCustom(new Date(date.getTime() + minute * 60000));
+  },
+  isHoliday: (date) => {
+    if (holidayList[date]) {
+      return true;
+    }
+    return false;
   },
   getBeforeDate: (data = null) => {
     const date = data ? new Date(data) : new Date();

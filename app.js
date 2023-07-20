@@ -24,15 +24,22 @@ const fcmUsers = require('./src/utils/array-fcm');
 const app = express();
 require('dotenv').config();
 
-const server = https
-  .createServer(
-    {
-      key: fs.readFileSync('./security/cert.key'),
-      cert: fs.readFileSync('./security/cert.pem'),
-    },
-    app,
-  );
+// const server = https
+//   .createServer(
+//     {
+//       key: fs.readFileSync('./security/cert.key'),
+//       cert: fs.readFileSync('./security/cert.pem'),
+//     },
+//     app,
+//   );
 
+const server = app.listen(process.env.PORT, process.env.NODE_ENV === 'production'
+  ? process.env.HOST_DEPLOY : process.env.HOST_LOCAL, () => {
+  const host = server.address().address;
+  const { port } = server.address();
+
+  console.log(`server running at http://localhost:${port}`);
+});
 const io = socketIo(server, {
   cors: {
     origin: '*',
@@ -46,6 +53,7 @@ app.use((req, res, next) => {
 
 io.on('connection', (socket) => {
   console.log(`⚡: ${socket.id} user just connected!`);
+  console.log(fcmUsers);
   socket.on('user-connected', async (userId, token, type) => {
     // socket
     usersConnected[socket.id] = userId;
@@ -77,13 +85,20 @@ io.on('connection', (socket) => {
   });
   socket.on('client-publishNotification', (type, data) => {
     console.log(data);
+    console.log(fcmUsers);
     socket.broadcast.emit('server-publishNotification', type, data);
   });
 
   socket.on('client-logout', (userId, token) => {
     console.log(`disconnect ${userId}`);
+    console.log(`token ${token}`);
+    console.log(fcmUsers);
     const index = fcmUsers.findIndex((item) => item.userId == `${userId}--${token}`);
-    fcmUsers.splice(index, 1);
+    console.log(index);
+    if (index !== -1) {
+      fcmUsers.splice(index, 1);
+    }
+    console.log(fcmUsers);
   });
 
   socket.on('disconnect', async () => {
@@ -91,26 +106,22 @@ io.on('connection', (socket) => {
     console.log('🔥: A user disconnected');
     delete usersConnected[socket.id];
     console.log(usersConnected);
+    // const index = fcmUsers.findIndex((item) => item.userId == `${userId}--${token}`);
+    // fcmUsers.splice(index, 1);
     // coba send notif
     // if (fcmUsers.length > 0) { await NotificationServiceInstance.publishNotification('halo', 'coba', fcmUsers.map((item) => item.token)); }
   });
 
   console.log(usersConnected); // ojIckSD2jqNzOqIrAGzL
 });
-// const server = app.listen(process.env.PORT, process.env.HOST_LOCAL, () => {
-//   const host = server.address().address;
-//   const { port } = server.address();
-
-//   console.log(`server running at${host} : ${port}`);
-// });
 
 // setting https
-server.listen(process.env.PORT, process.env.NODE_ENV === 'production'
-  ? process.env.HOST_DEPLOY : process.env.HOST_LOCAL, () => {
-  console.log(
-    `app running and listening on port ${server.address().port}! Go to https://${process.NODE_ENV === 'production' ? process.env.HOST_DEPLOY : process.env.HOST_LOCAL}:${server.address().port}/`,
-  );
-});
+// server.listen(process.env.PORT, process.env.NODE_ENV === 'production'
+//   ? process.env.HOST_DEPLOY : process.env.HOST_LOCAL, () => {
+//   console.log(
+//     `app running and listening on port ${server.address().port}! Go to https://${process.NODE_ENV === 'production' ? process.env.HOST_DEPLOY : process.env.HOST_LOCAL}:${server.address().port}/`,
+//   );
+// });
 
 // refresh instaAccessToken eg: weekly(every Sat)
 cron.schedule('* * * * * 7', async () => {

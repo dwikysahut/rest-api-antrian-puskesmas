@@ -147,7 +147,10 @@ module.exports = {
       const { id_praktek, tanggal_periksa } = request.query;
       const allAntrian = await antrianModel.getAntrianByDateAndPraktek(tanggal_periksa, id_praktek);
       const getPraktek = await praktekModel.getPraktekById(id_praktek);
-
+      // cek tanggal libur
+      if (helper.isHoliday(tanggal_periksa)) {
+        return helper.response(response, 401, { message: 'Pelayanan Tutup di hari Libur' });
+      }
       // cek apabila tanggal kunjungan adalah sebelum tanggal hari ini
       if (new Date(tanggal_periksa.split('/').reverse().join('-')) < new Date(getFullDate(null))) {
         return helper.response(response, 401, { message: 'Tanggal tidak boleh kurang dari hari ini' });
@@ -714,10 +717,13 @@ module.exports = {
     try {
       const setData = request.body;
       const { io, token } = request;
-      // setData.tanggal_periksa = getFullDate(null);
+      setData.tanggal_periksa = getFullDate(null);
 
-      setData.tanggal_periksa = setData.tanggal_periksa.split('/').reverse().join('-');
+      // setData.tanggal_periksa = '2023-06-12';
 
+      if (helper.isHoliday(setData.tanggal_periksa)) {
+        return helper.response(response, 401, { message: 'Pelayanan Tutup di hari Libur' });
+      }
       // cek apakah hari minggu
       const date = new Date(setData.tanggal_periksa.split('/').reverse().join('-'));
       // if (date.getDay() == 0) {
@@ -943,6 +949,7 @@ module.exports = {
 
       const checkData = await antrianModel.getAntrianById(id);
 
+      const date = new Date(checkData.tanggal_periksa);
       // cek apakah tanggal hari ini sama dengan tanggal periksa/kunjungan
 
       // if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') !== new Date(getFullDate(null)).toLocaleDateString('id')) {
@@ -950,7 +957,6 @@ module.exports = {
       //   return helper.response(response, 401, { message: 'Waktu Kunjungan bukan untuk hari ini' });
       // }
       // cek apakah hari minggu
-      const date = new Date(checkData.tanggal_periksa);
 
       // if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') != new Date(getFullDate(null)).toLocaleDateString('id')) {
       //   await connection.rollback();
@@ -1327,13 +1333,13 @@ module.exports = {
 
       const checkData = await antrianModel.getAntrianById(id);
 
+      const date = new Date(checkData.tanggal_periksa);
       // cek apakah tanggal hari ini sama dengan tanggal periksa/kunjungan
       // if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') != new Date(getFullDate(null)).toLocaleDateString('id')) {
       //   await connection.rollback();
       //   return helper.response(response, 401, { message: 'Waktu Kunjungan bukan untuk hari ini' });
       // }
       // cek apakah hari minggu
-      const date = new Date(checkData.tanggal_periksa);
       // cek apakah untuk hari ini
       // if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id')) {
       //   if (getFullTime() >= '07:30:00') {

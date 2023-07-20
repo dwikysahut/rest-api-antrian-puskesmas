@@ -4,7 +4,7 @@ const connection = require('../config/connection');
 
 module.exports = {
   getUserByEmail: (email) => new Promise((resolve, reject) => {
-    connection.query('SELECT * FROM USERS WHERE email=?', email, (error, result) => {
+    connection.query('SELECT * FROM users WHERE email=?', email, (error, result) => {
       if (!error) {
         resolve(result[0]);
       } else {
@@ -32,7 +32,7 @@ module.exports = {
     });
   }),
   createAccount: (setData) => new Promise((resolve, reject) => {
-    connection.query('INSERT INTO USERS set ?', setData, (error, result) => {
+    connection.query('INSERT INTO users set ?', setData, (error, result) => {
       if (!error) {
         const newResult = {
           id: result.insertId,
@@ -56,7 +56,7 @@ module.exports = {
     });
   }),
   forgotPassword: (userId, password) => new Promise((resolve, reject) => {
-    connection.query(`UPDATE USERS SET PASSWORD='${password}' where USER_ID='${userId}'`, (error, result) => {
+    connection.query(`UPDATE users SET PASSWORD='${password}' where USER_ID='${userId}'`, (error, result) => {
       if (!error) {
         const newResult = {
           userId,
@@ -69,7 +69,7 @@ module.exports = {
     });
   }),
   verifyUserEmail: (userId) => new Promise((resolve, reject) => {
-    connection.query('UPDATE USERS SET VERIF_EMAIL=1 WHERE USER_ID=?', userId, (error, result) => {
+    connection.query('UPDATE users SET VERIF_EMAIL=1 WHERE USER_ID=?', userId, (error, result) => {
       if (!error) {
         const newResult = {
           userId,
@@ -82,7 +82,7 @@ module.exports = {
     });
   }),
   verifyUserAccount: (userId) => new Promise((resolve, reject) => {
-    connection.query('UPDATE USERS SET VERIF_AKUN=1 WHERE USER_ID=?', userId, (error, result) => {
+    connection.query('UPDATE users SET VERIF_AKUN=1 WHERE USER_ID=?', userId, (error, result) => {
       if (!error) {
         const newResult = {
           userId,

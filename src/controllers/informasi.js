@@ -14,16 +14,20 @@ module.exports = {
       // mengambil informasi dari db
       const resultFirst = await informasiModel.getAllInformasi();
       // mengambil informasi dari Instagram
+
+      /* untuk instagram
       const resultSecond = await informasiModel.getFromInstagram(constant.token);
       // melakukan mapping untuk menyamakan atribut object
-      const newResultSecond = resultSecond.map((item) => ({
-        id_informasi: parseInt(item.id, 10), judul_informasi: null, isi_informasi: item.caption, gambar: item.media_url, created_at: item.timestamp,
-      }));
+      // const newResultSecond = resultSecond.map((item) => ({
+      //   id_informasi: parseInt(item.id, 10), judul_informasi: null, isi_informasi: item.caption, gambar: item.media_url, created_at: item.timestamp,
+      // }));
       // menggabungkan kedua data
-      const combineResult = [
-        ...resultFirst,
-        ...newResultSecond,
-      ];
+      // const combineResult = [
+      //   ...resultFirst,
+      //   ...newResultSecond,
+      // ];
+      */
+      const combineResult = [...resultFirst];
       const sortedCombineResult = combineResult.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       return helper.response(response, 200, { message: 'Get All data Informasi berhasil' }, sortedCombineResult);
     } catch (error) {

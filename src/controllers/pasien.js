@@ -10,6 +10,7 @@ module.exports = {
   getAllPasien: async (request, response) => {
     try {
       const result = await pasienModel.getAllPasien();
+      // tidak jadi
       // const newResult=result.map(item=> return{
       //   nik: item.nik,
       //   no_kk: item.no_kk,

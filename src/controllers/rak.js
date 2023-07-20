@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-const rakModel = require('../models/Rak');
+const rakModel = require('../models/rak');
 const helper = require('../helpers');
 
 module.exports = {

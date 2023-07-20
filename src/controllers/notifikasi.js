@@ -10,6 +10,9 @@ const praktekModel = require('../models/praktek');
 const NotificationServiceInstance = require('../utils/NotificationService');
 const fcmUsers = require('../utils/array-fcm');
 const connection = require('../config/connection');
+const {
+  getFullDate, getFullTime, constTimeToMinute, TimeToMinute, timeToMinute,
+} = require('../helpers');
 
 module.exports = {
   getAllNotifikasi: async (request, response) => {
@@ -37,9 +40,11 @@ module.exports = {
     try {
       const { id } = request.params;
       const resultNotifikasi = await notifikasiModel.getNotifikasiByUser(id);
-      // mengambil notifikasi request dari user_id_tujuan adalah user yang bersangkutan
+      // mengambil notifikasi request dari user_id_tujuan yang merupakan user yang bersangkutan
       const resultRequest = await notifikasiModel.getNotifikasiRequestByUser(id);
-      const result = [...resultNotifikasi, ...resultRequest];
+      const filteredResultReq = resultRequest.filter((item) => new Date(item.tanggal_periksa).toISOString() >= new Date(helper.getFullDate(null)).toISOString());
+
+      const result = [...resultNotifikasi, ...filteredResultReq];
 
       return helper.response(response, 200, { message: 'Get data Notifikasi dari User berhasil' }, result);
     } catch (error) {
@@ -95,7 +100,7 @@ module.exports = {
       io.emit('server-postRequest', {
         user_id_asal: checkDataAsal.user_id, user_id_tujuan: checkData.user_id, tanggal_periksa: helper.getFullDate(new Date(checkDataAsal.tanggal_periksa)), id_praktek: checkDataAsal.id_praktek,
       });
-      const tokens = fcmUsers.filter((item) => item.userId.split('--')[0] == checkData.user_id_tujuan).map((item) => item.token);
+      const tokens = fcmUsers.filter((item) => item.userId.split('--')[0] == checkData.user_id).map((item) => item.token);
       if (tokens.length > 0) {
         await NotificationServiceInstance.publishNotification('Permintaan Penukaran antrian baru', 'Seorang pasien ingin menukarkan antrian dengan anda ', tokens);
       }
