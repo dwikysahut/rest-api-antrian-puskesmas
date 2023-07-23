@@ -53,20 +53,20 @@ module.exports = {
         return helper.response(response, 401, { message: 'Proses gagal, Pelayanan tutup di hari Minggu' });
       }
       // cek apakah untuk hari ini
-      if (new Date(tanggal_periksa.split('/').reverse().join('-')).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id')) {
-        // jika hari jumat dan lebih dari jam 10 maka gagal
-        if (date.getDay() == 5 && getFullTime() > '10:00:00') {
-          return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
-        }
-        // jika hari sabtu dan lebih dari jam 11 maka gagal
-        if (date.getDay() == 6 && getFullTime() > '11:00:00') {
-          return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
-        }
-        // jika di hari senin - kamis dan lebih dari jam 12
-        if (date.getDay() < 5 && getFullTime() > '12:00:00') {
-          return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
-        }
-      }
+      // if (new Date(tanggal_periksa.split('/').reverse().join('-')).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id')) {
+      //   // jika hari jumat dan lebih dari jam 10 maka gagal
+      //   if (date.getDay() == 5 && getFullTime() > '10:00:00') {
+      //     return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
+      //   }
+      //   // jika hari sabtu dan lebih dari jam 11 maka gagal
+      //   if (date.getDay() == 6 && getFullTime() > '11:00:00') {
+      //     return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
+      //   }
+      //   // jika di hari senin - kamis dan lebih dari jam 12
+      //   if (date.getDay() < 5 && getFullTime() > '12:00:00') {
+      //     return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
+      //   }
+      // }
 
       // // cek apabila melebihi jam pelayanan (tidak dipakai lagi)
       // if (new Date(tanggal_periksa.split('/').reverse().join('-')).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id') && getFullTime() > '12:00:00') {
@@ -152,34 +152,34 @@ module.exports = {
         return helper.response(response, 401, { message: 'Pelayanan Tutup di hari Libur' });
       }
       // cek apabila tanggal kunjungan adalah sebelum tanggal hari ini
-      if (new Date(tanggal_periksa.split('/').reverse().join('-')) < new Date(getFullDate(null))) {
-        return helper.response(response, 401, { message: 'Tanggal tidak boleh kurang dari hari ini' });
-      }
+      // if (new Date(tanggal_periksa.split('/').reverse().join('-')) < new Date(getFullDate(null))) {
+      //   return helper.response(response, 401, { message: 'Tanggal tidak boleh kurang dari hari ini' });
+      // }
 
-      // cek apakah hari minggu
-      const date = new Date(tanggal_periksa.split('/').reverse().join('-'));
-      if (date.getDay() == 0) {
-        return helper.response(response, 401, { message: 'Proses gagal, Pelayanan tutup di hari Minggu' });
-      }
-      // cek apabila hari ini namun melebihi jam pelayanan
-      if (new Date(tanggal_periksa.split('/').reverse().join('-')).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id')) {
-        if (getFullTime() >= '07:30:00') {
-          // jika hari jumat dan lebih dari jam 10 maka gagal
-          if (date.getDay() == 5 && getFullTime() > '10:00:00') {
-            return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
-          }
-          // jika hari sabtu dan lebih dari jam 11 maka gagal
-          if (date.getDay() == 6 && getFullTime() > '11:00:00') {
-            return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
-          }
-          // jika di hari senin - kamis dan lebih dari jam 12
-          if (date.getDay() < 5 && getFullTime() > '12:00:00') {
-            return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
-          }
-        } else {
-          return helper.response(response, 401, { message: 'Proses gagal,  diluar waktu pendaftaran' });
-        }
-      }
+      // // cek apakah hari minggu
+      // const date = new Date(tanggal_periksa.split('/').reverse().join('-'));
+      // if (date.getDay() == 0) {
+      //   return helper.response(response, 401, { message: 'Proses gagal, Pelayanan tutup di hari Minggu' });
+      // }
+      // // cek apabila hari ini namun melebihi jam pelayanan
+      // if (new Date(tanggal_periksa.split('/').reverse().join('-')).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id')) {
+      //   if (getFullTime() >= '07:30:00') {
+      //     // jika hari jumat dan lebih dari jam 10 maka gagal
+      //     if (date.getDay() == 5 && getFullTime() > '10:00:00') {
+      //       return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
+      //     }
+      //     // jika hari sabtu dan lebih dari jam 11 maka gagal
+      //     if (date.getDay() == 6 && getFullTime() > '11:00:00') {
+      //       return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
+      //     }
+      //     // jika di hari senin - kamis dan lebih dari jam 12
+      //     if (date.getDay() < 5 && getFullTime() > '12:00:00') {
+      //       return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
+      //     }
+      //   } else {
+      //     return helper.response(response, 401, { message: 'Proses gagal,  diluar waktu pendaftaran' });
+      //   }
+      // }
       // if (new Date(tanggal_periksa.split('/').reverse().join('-')).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id') && getFullTime() > '12:00:00') {
       //   return helper.response(response, 401, { message: 'Proses gagal, melebihi jam pelayanan' });
       // }
@@ -326,7 +326,9 @@ module.exports = {
   getEstimasiWaktu: async (request, response) => {
     try {
       const { id } = request.params;
+      console.log(id);
       const checkData = await antrianModel.getAntrianById(id);
+      console.log(checkData);
       const queueHaventBeenCalled = await antrianModel.getAntrianAvailableByDate(checkData.tanggal_periksa, checkData.id_praktek);
       // mengambil antrian pertama yang belum dilayani sebelum antrian terpilih
       const topQueue = queueHaventBeenCalled.filter((item) => item.urutan <= checkData.urutan && item.status_antrian < 5)[0];
@@ -336,7 +338,7 @@ module.exports = {
       if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id') && getFullTime() > '08:00:00') {
         if (getFullTime() > checkData.waktu_pelayanan) {
           // cek jika antrian terplih akan dilayani berikutnya  namun terjadi keterlambatan dipasien sebelumnya
-          if (topQueue.id_antrian == checkData.id_antrian) {
+          if (topQueue?.id_antrian == checkData.id_antrian) {
             console.log('masuk 1');
             result.waktu_pelayanan = getFullTime();
             result.estimasi_waktu_pelayanan = '-';
@@ -391,24 +393,24 @@ module.exports = {
         return helper.response(response, 401, { message: 'Proses gagal, Pelayanan tutup di hari Minggu' });
       }
       // cek apakah untuk hari ini
-      if (new Date(setData.tanggal_periksa.split('/').reverse().join('-')).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id')) {
-        // jika hari jumat dan lebih dari jam 10 maka gagal
-        if (date.getDay() == 5 && getFullTime() > '10:00:00') {
-          await connection.rollback();
+      // if (new Date(setData.tanggal_periksa.split('/').reverse().join('-')).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id')) {
+      //   // jika hari jumat dan lebih dari jam 10 maka gagal
+      //   if (date.getDay() == 5 && getFullTime() > '10:00:00') {
+      //     await connection.rollback();
 
-          return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
-        }
-        // jika hari sabtu dan lebih dari jam 11 maka gagal
-        if (date.getDay() == 6 && getFullTime() > '11:00:00') {
-          await connection.rollback();
-          return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
-        }
-        // jika di hari senin - kamis dan lebih dari jam 12
-        if (date.getDay() < 5 && getFullTime() > '12:00:00') {
-          await connection.rollback();
-          return helper.response(response, 401, { message: 'Proses gagal,  diluar batas waktu pendaftaran' });
-        }
-      }
+      //     return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
+      //   }
+      //   // jika hari sabtu dan lebih dari jam 11 maka gagal
+      //   if (date.getDay() == 6 && getFullTime() > '11:00:00') {
+      //     await connection.rollback();
+      //     return helper.response(response, 401, { message: 'Proses gagal, diluar batas waktu pendaftaran' });
+      //   }
+      //   // jika di hari senin - kamis dan lebih dari jam 12
+      //   if (date.getDay() < 5 && getFullTime() > '12:00:00') {
+      //     await connection.rollback();
+      //     return helper.response(response, 401, { message: 'Proses gagal,  diluar batas waktu pendaftaran' });
+      //   }
+      // }
 
       if (new Date(setData.tanggal_periksa.split('/').reverse().join('-')) > new Date(getFullDate(null))) setData.booking = 1;
       else setData.booking = 0;
@@ -678,16 +680,22 @@ module.exports = {
       // 4. detail rekam medis
 
       // cek apakah no RM pada data kartu keluarga null
-      if (checkNewestKK.no_rm !== null) {
-        const checkDetailRM = await detailRekamMedisModel.getDetailRekamMedisByNIK(setData.nik);
-        if (!checkDetailRM) {
-          console.log('detail rekam medis');
-          // input data detail saat tidak ada data berdasarkan NIK di detail RM
-          await detailRekamMedisModel.postDetailRekamMedis(setDataDetailRM);
-        } else {
-          console.log('edit detail rekam medis');
-          // apabila ada, maka edit
-          await detailRekamMedisModel.putDetailRekamMedis(checkDetailRM.id_detail_rekam_medis, { id_rak: setDataDetailRM.id_rak });
+
+      if (token.result.role < 3) {
+        if (checkNewestKK.no_rm !== null) {
+          const checkDetailRM = await detailRekamMedisModel.getDetailRekamMedisByNIK(setData.nik);
+          if (!checkDetailRM) {
+            setDataDetailRM.no_rm = setData.no_rm == undefined ? checkNewestKK.no_rm : setData.no_rm;
+            setDataDetailRM.no_rm = setData.no_rm == undefined ? checkNewestKK.no_rm : setData.no_rm;
+            console.log('detail rekam medis');
+            console.log(setData.no_rm);
+            // input data detail saat tidak ada data berdasarkan NIK di detail RM
+            await detailRekamMedisModel.postDetailRekamMedis(setDataDetailRM);
+          } else {
+            console.log('edit detail rekam medis');
+            // apabila ada, maka edit
+            await detailRekamMedisModel.putDetailRekamMedis(checkDetailRM.id_detail_rekam_medis, { id_rak: setDataDetailRM.id_rak });
+          }
         }
       }
       // 5. antrian
@@ -1243,6 +1251,7 @@ module.exports = {
         await notifikasiModel.postNotifikasi(setDataNotif);
 
         io.emit('server-editAntrian', { result, tanggal_periksa: getFullDate(new Date(checkData.tanggal_periksa)), id_praktek: checkData.id_praktek });
+        console.log('ada edit');
         await connection.commit();
         return helper.response(response, 200, { message: 'Put data Antrian berhasil' }, result);
       }
@@ -1267,6 +1276,7 @@ module.exports = {
         await antrianModel.putAntrian(id, setDataAntrian);
         const result = await antrianModel.getAntrianById(id);
         io.emit('server-editAntrian', { result, tanggal_periksa: getFullDate(new Date(checkData.tanggal_periksa)), id_praktek: checkData.id_praktek });
+        console.log('ada edit');
 
         const newResult = {
           ...result,

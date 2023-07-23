@@ -126,7 +126,7 @@ module.exports = {
   },
   getFullTime: () => {
     const date = new Date();
-    return `${date.getHours().toString().length < 2 ? `0${date.getHours()}` : date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+    return `${date.getHours().toString().length < 2 ? `0${date.getHours()}` : date.getHours()}:${date.getMinutes().toString().length < 2 ? `0${date.getMinutes()}` : date.getMinutes()}:${date.getSeconds().toString().length < 2 ? `0${date.getSeconds()}` : date.getSeconds()}`;
   },
   convertMontName: (month) => {
     switch (month) {
