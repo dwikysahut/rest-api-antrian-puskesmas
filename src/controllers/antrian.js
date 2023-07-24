@@ -156,11 +156,11 @@ module.exports = {
       //   return helper.response(response, 401, { message: 'Tanggal tidak boleh kurang dari hari ini' });
       // }
 
-      // // cek apakah hari minggu
-      // const date = new Date(tanggal_periksa.split('/').reverse().join('-'));
-      // if (date.getDay() == 0) {
-      //   return helper.response(response, 401, { message: 'Proses gagal, Pelayanan tutup di hari Minggu' });
-      // }
+      // cek apakah hari minggu
+      const date = new Date(tanggal_periksa.split('/').reverse().join('-'));
+      if (date.getDay() == 0) {
+        return helper.response(response, 401, { message: 'Proses gagal, Pelayanan tutup di hari Minggu' });
+      }
       // // cek apabila hari ini namun melebihi jam pelayanan
       // if (new Date(tanggal_periksa.split('/').reverse().join('-')).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id')) {
       //   if (getFullTime() >= '07:30:00') {
@@ -342,20 +342,34 @@ module.exports = {
             console.log('masuk 1');
             result.waktu_pelayanan = getFullTime();
             result.estimasi_waktu_pelayanan = '-';
+            // kalo bug ini
+            result.sisa_antrian = parseInt(checkData.estimasi_waktu_pelayanan, 10) / 10;
           } else {
             console.log('masuk 2');
             result.waktu_pelayanan = helper.getCalculatedTime(checkData.estimasi_waktu_pelayanan, getFullTime());
             result.estimasi_waktu_pelayanan = checkData.estimasi_waktu_pelayanan;
+            // kalo bug ini
+            result.sisa_antrian = parseInt(checkData.estimasi_waktu_pelayanan, 10) / 10;
           }
         } else {
           console.log('masuk 3');
           result.waktu_pelayanan = checkData.waktu_pelayanan;
           result.estimasi_waktu_pelayanan = checkData.estimasi_waktu_pelayanan;
+          // kalo bug ini
+          result.sisa_antrian = parseInt(checkData.estimasi_waktu_pelayanan, 10) / 10;
         }
       } else {
         console.log('masuk 4');
-        result.waktu_pelayanan = checkData.waktu_pelayanan;
-        result.estimasi_waktu_pelayanan = checkData.estimasi_waktu_pelayanan;
+        if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') < new Date(getFullDate(null)).toLocaleDateString('id')) {
+          result.waktu_pelayanan = '-';
+          result.estimasi_waktu_pelayanan = '-';
+          // kalo bug ini
+          result.sisa_antrian = parseInt(checkData.estimasi_waktu_pelayanan, 10) / 10;
+        } else {
+          result.waktu_pelayanan = checkData.waktu_pelayanan;
+          result.estimasi_waktu_pelayanan = checkData.estimasi_waktu_pelayanan;
+          result.sisa_antrian = parseInt(checkData.estimasi_waktu_pelayanan, 10) / 10;
+        }
       }
       return helper.response(response, 200, { message: 'Get data Antrian berhasil' }, result);
     } catch (error) {
@@ -734,12 +748,11 @@ module.exports = {
       }
       // cek apakah hari minggu
       const date = new Date(setData.tanggal_periksa.split('/').reverse().join('-'));
-      // if (date.getDay() == 0) {
-      //   await connection.rollback();
-      //   return helper.response(response, 401, { message: 'Proses gagal, Pelayanan tutup di hari Minggu' });
-      // }
-      // console.log('tes kebenaran');
-      // console.log(date.getDay());
+      if (date.getDay() == 0) {
+        await connection.rollback();
+        return helper.response(response, 401, { message: 'Proses gagal, Pelayanan tutup di hari Minggu' });
+      }
+
       // console.log(new Date(setData.tanggal_periksa.split('/').reverse().join('-')).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id'));
       // // cek apakah untuk hari ini
       // if (new Date(setData.tanggal_periksa.split('/').reverse().join('-')).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id')) {
@@ -958,18 +971,16 @@ module.exports = {
       const checkData = await antrianModel.getAntrianById(id);
 
       const date = new Date(checkData.tanggal_periksa);
-      // cek apakah tanggal hari ini sama dengan tanggal periksa/kunjungan
 
-      // if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') !== new Date(getFullDate(null)).toLocaleDateString('id')) {
-      //   await connection.rollback();
-      //   return helper.response(response, 401, { message: 'Waktu Kunjungan bukan untuk hari ini' });
-      // }
-      // cek apakah hari minggu
+      // cek apakah hari minggu(deleted)
+
+      // cek apakah tanggal hari ini sama dengan tanggal periksa/kunjungan
 
       // if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') != new Date(getFullDate(null)).toLocaleDateString('id')) {
       //   await connection.rollback();
       //   return helper.response(response, 401, { message: 'Waktu Kunjungan bukan untuk hari ini' });
       // }
+
       // // cek apakah untuk hari ini
       // if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id')) {
       //   if (getFullTime() >= '07:30:00') {
@@ -1345,12 +1356,15 @@ module.exports = {
 
       const date = new Date(checkData.tanggal_periksa);
       // cek apakah tanggal hari ini sama dengan tanggal periksa/kunjungan
+
       // if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') != new Date(getFullDate(null)).toLocaleDateString('id')) {
       //   await connection.rollback();
       //   return helper.response(response, 401, { message: 'Waktu Kunjungan bukan untuk hari ini' });
       // }
+
       // cek apakah hari minggu
       // cek apakah untuk hari ini
+
       // if (new Date(checkData.tanggal_periksa).toLocaleDateString('id') == new Date(getFullDate(null)).toLocaleDateString('id')) {
       //   if (getFullTime() >= '07:30:00') {
       //     // jika hari jumat dan lebih dari jam 10 maka gagal
